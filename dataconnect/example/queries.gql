@@ -1,0 +1,9 @@
+mutation CreatePost($imageUrl: String!, $caption: String!, $location: String) @auth(level: USER) {
+      post_insert(data: {
+        imageUrl: $imageUrl,
+        caption: $caption,
+        location: $location,
+        authorId_expr: "auth.uid",
+        createdAt_expr: "request.time"
+      })
+    }

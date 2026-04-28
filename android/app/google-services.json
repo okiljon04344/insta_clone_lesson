@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "550750223602",
+    "firebase_url": "https://instagram-clone-lesson-6c0ae-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "instagram-clone-lesson-6c0ae",
+    "storage_bucket": "instagram-clone-lesson-6c0ae.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:550750223602:android:48331879c6bec47a71646b",
+        "android_client_info": {
+          "package_name": "com.example.instagram_clone"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "550750223602-alp1ro0ku35un32talqjqvggioqr17oc.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.instagram_clone",
+            "certificate_hash": "f9c39d7602ef242e17de4dbb0b93285e93411a00"
+          }
+        },
+        {
+          "client_id": "550750223602-59bcvifg7dcgngsdc8kt605ctffq8ktl.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDwVqEGYmfseGPSUDELM2H2hIdiCiwK3Z0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "550750223602-59bcvifg7dcgngsdc8kt605ctffq8ktl.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "550750223602-ta1omq1jk88k3ojr60g9g6gc01uj6q99.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.instagramClone"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

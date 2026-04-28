@@ -1,0 +1,45 @@
+{
+    "firestore": {
+        "database": "(default)",
+        "location": "asia-northeast1",
+        "rules": "firestore.rules",
+        "indexes": "firestore.indexes.json"
+    },
+    "flutter": {
+        "platforms": {
+            "android": {
+                "default": {
+                    "projectId": "instagram-clone-lesson-6c0ae",
+                    "appId": "1:550750223602:android:48331879c6bec47a71646b",
+                    "fileOutput": "android/app/google-services.json"
+                }
+            },
+            "dart": {
+                "lib/firebase_options.dart": {
+                    "projectId": "instagram-clone-lesson-6c0ae",
+                    "configurations": {
+                        "android": "1:550750223602:android:48331879c6bec47a71646b",
+                        "ios": "1:550750223602:ios:ed49a6bbfcab015671646b",
+                        "macos": "1:550750223602:ios:ed49a6bbfcab015671646b",
+                        "web": "1:550750223602:web:c5ed4138bd16d5d071646b",
+                        "windows": "1:550750223602:web:af3c72bec5eb326971646b"
+                    }
+                }
+            }
+        }
+    },
+    "hosting": {
+        "public": "build/web",
+        "ignore": [
+            "firebase.json",
+            "**/.*",
+            "**/node_modules/**"
+        ],
+        "rewrites": [
+            {
+                "source": "**",
+                "destination": "/index.html"
+            }
+        ]
+    }
+}

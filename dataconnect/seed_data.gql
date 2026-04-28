@@ -1,0 +1,69 @@
+mutation CreateDemoData @transaction @auth(level: USER, insecureReason: "This operation is for seeding data and should only be run by authenticated administrators.") {
+  user_insertMany(data: [
+    {
+      id: "550e8400-e29b-41d4-a716-446655440000",
+      username: "user1",
+      email: "user1@example.com",
+      createdAt: "2023-01-01T10:00:00Z",
+      fullName: "User One"
+    },
+    {
+      id: "550e8400-e29b-41d4-a716-446655440001",
+      username: "user2",
+      email: "user2@example.com",
+      createdAt: "2023-01-02T11:00:00Z",
+      fullName: "User Two"
+    }
+  ])
+  post_insertMany(data: [
+    {
+      id: "6a2f8c12-3e4d-5f6a-7b8c-9d0e1f2a3b4c",
+      authorId: "550e8400-e29b-41d4-a716-446655440000",
+      imageUrl: "https://example.com/image1.jpg",
+      caption: "Beautiful sunset!",
+      createdAt: "2023-01-01T12:00:00Z",
+      location: "Beach"
+    },
+    {
+      id: "7b8c9d0e-1f2a-3b4c-5d6e-7f8a9b0c1d2e",
+      authorId: "550e8400-e29b-41d4-a716-446655440001",
+      imageUrl: "https://example.com/image2.jpg",
+      caption: "Morning coffee vibes.",
+      createdAt: "2023-01-02T13:00:00Z",
+      location: "Cafe"
+    }
+  ])
+  comment_insertMany(data: [
+    {
+      postId: "6a2f8c12-3e4d-5f6a-7b8c-9d0e1f2a3b4c",
+      userId: "550e8400-e29b-41d4-a716-446655440001",
+      content: "Lovely photo!",
+      createdAt: "2023-01-01T14:00:00Z"
+    },
+    {
+      postId: "7b8c9d0e-1f2a-3b4c-5d6e-7f8a9b0c1d2e",
+      userId: "550e8400-e29b-41d4-a716-446655440000",
+      content: "Looks delicious!",
+      createdAt: "2023-01-02T15:00:00Z"
+    }
+  ])
+  like_insertMany(data: [
+    {
+      postId: "6a2f8c12-3e4d-5f6a-7b8c-9d0e1f2a3b4c",
+      userId: "550e8400-e29b-41d4-a716-446655440001",
+      createdAt: "2023-01-01T16:00:00Z"
+    },
+    {
+      postId: "7b8c9d0e-1f2a-3b4c-5d6e-7f8a9b0c1d2e",
+      userId: "550e8400-e29b-41d4-a716-446655440000",
+      createdAt: "2023-01-02T17:00:00Z"
+    }
+  ])
+  follow_insertMany(data: [
+    {
+      followerId: "550e8400-e29b-41d4-a716-446655440000",
+      followedId: "550e8400-e29b-41d4-a716-446655440001",
+      createdAt: "2023-01-03T09:00:00Z"
+    }
+  ])
+}

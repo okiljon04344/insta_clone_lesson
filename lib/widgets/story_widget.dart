@@ -1,0 +1,103 @@
+import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../models/story.dart';
+import '../theme/app_theme.dart';
+
+class StoryWidget extends StatelessWidget {
+  final Story story;
+
+  const StoryWidget({super.key, required this.story});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {},
+      child: SizedBox(
+        width: 72,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                // Gradient ring
+                if (!story.isSeen && !story.isOwn)
+                  Container(
+                    width: 66,
+                    height: 66,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: AppTheme.storyGradient,
+                    ),
+                  )
+                else
+                  Container(
+                    width: 66,
+                    height: 66,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: story.isSeen
+                            ? AppTheme.grey.withValues(alpha: 0.4)
+                            : AppTheme.divider,
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                // Avatar
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppTheme.darkGrey,
+                  ),
+                  child: ClipOval(
+                    child: CachedNetworkImage(
+                      imageUrl: story.user.avatarUrl,
+                      fit: BoxFit.cover,
+                      placeholder: (_, _) =>
+                          Container(color: AppTheme.darkGrey),
+                      errorWidget: (_, _, _) =>
+                          const Icon(Icons.person, color: AppTheme.grey),
+                    ),
+                  ),
+                ),
+                // Add icon for own story
+                if (story.isOwn)
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      width: 20,
+                      height: 20,
+                      decoration: const BoxDecoration(
+                        color: AppTheme.blue,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.add,
+                        color: Colors.white,
+                        size: 14,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              story.isOwn ? 'Sizning story' : story.user.username,
+              style: TextStyle(
+                fontSize: 11,
+                color: story.isSeen ? AppTheme.grey : AppTheme.white,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
