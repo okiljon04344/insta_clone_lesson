@@ -63,7 +63,6 @@ class NotificationService {
   final _db = FirebaseFirestore.instance;
   String get _myUid => FirebaseAuth.instance.currentUser!.uid;
 
-  // Bildirishnoma yuborish
   Future<void> _send({
     required String toUid,
     required NotificationType type,
@@ -71,7 +70,7 @@ class NotificationService {
     String? postImageUrl,
     String? text,
   }) async {
-    if (toUid == _myUid) return; // O'ziga yuborma
+    if (toUid == _myUid) return;
 
     final user = FirebaseAuth.instance.currentUser!;
     final userDoc = await _db.collection('users').doc(_myUid).get();
@@ -117,19 +116,6 @@ class NotificationService {
   Future<void> sendFollowNotification(String toUid) =>
       _send(toUid: toUid, type: NotificationType.follow);
 
-  Future<void> sendMentionNotification({
-    required String toUid,
-    required String postId,
-    required String postImageUrl,
-    required String comment,
-  }) => _send(
-    toUid: toUid,
-    type: NotificationType.mention,
-    postId: postId,
-    postImageUrl: postImageUrl,
-    text: comment,
-  );
-
   Future<void> sendMessageNotification({
     required String toUid,
     required String messageText,
@@ -155,7 +141,6 @@ class NotificationService {
         : 'O\'tkazib yuborilgan qo\'ng\'iroq',
   );
 
-  // Real-time notifications stream
   Stream<List<AppNotification>> notificationsStream() {
     return _db
         .collection('notifications')
@@ -171,7 +156,6 @@ class NotificationService {
         );
   }
 
-  // O'qilmagan bildirishnomalar soni
   Stream<int> unreadCountStream() {
     return _db
         .collection('notifications')
@@ -182,7 +166,6 @@ class NotificationService {
         .map((q) => q.docs.length);
   }
 
-  // Hammasi o'qildi
   Future<void> markAllRead() async {
     final batch = _db.batch();
     final snap = await _db

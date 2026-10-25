@@ -205,7 +205,7 @@ class AppLanguageService {
           return;
         }
       } catch (_) {
-        // Server unavailable bo'lsa local fallback ishlatiladi.
+        // Server unavailable: fall back to the locally stored locale.
       }
     }
 
@@ -237,7 +237,7 @@ class AppLanguageService {
           'appLanguageCountryCode': resolved.countryCode ?? '',
         }, SetOptions(merge: true));
       } catch (_) {
-        // Tarmoq bo'lmasa ham ilova ichida til darhol almashadi.
+        // Offline is fine: the language still changes locally.
       }
     }
 

@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
-import '../models/user_model.dart';
 import 'notification_service.dart';
 import 'supabase_storage_service.dart';
 
@@ -34,22 +33,6 @@ class ChatMessage {
   }
 }
 
-class ChatConversation {
-  final String chatId;
-  final UserModel otherUser;
-  final String lastMessage;
-  final DateTime lastMessageAt;
-  final bool isSeen;
-
-  ChatConversation({
-    required this.chatId,
-    required this.otherUser,
-    required this.lastMessage,
-    required this.lastMessageAt,
-    required this.isSeen,
-  });
-}
-
 class ChatService {
   static final ChatService _instance = ChatService._internal();
   factory ChatService() => _instance;
@@ -63,7 +46,6 @@ class ChatService {
     return '${sorted[0]}_${sorted[1]}';
   }
 
-  // Xabar yuborish + notification
   Future<void> sendMessage(String toUid, String text) async {
     final cid = chatId(_myUid, toUid);
     final now = FieldValue.serverTimestamp();
@@ -92,7 +74,7 @@ class ChatService {
 
     await batch.commit();
 
-    // Bildirishnoma yuborish (await kerak emas)
+    // Fire-and-forget: a failed notification must not fail the send.
     NotificationService()
         .sendMessageNotification(toUid: toUid, messageText: text)
         .catchError((_) {});
@@ -135,7 +117,6 @@ class ChatService {
         .catchError((_) {});
   }
 
-  // Xabarlar stream
   Stream<List<ChatMessage>> messagesStream(String toUid) {
     final cid = chatId(_myUid, toUid);
     return _db
@@ -150,11 +131,10 @@ class ChatService {
         );
   }
 
-  // Ko'rilgan deb belgilash + xabarlarga seen=true
+  /// Marks the chat as seen and flags the other user's unread messages.
   Future<void> markSeen(String toUid) async {
     final cid = chatId(_myUid, toUid);
 
-    // Chat doc seenBy update
     await _db
         .collection('chats')
         .doc(cid)
@@ -163,7 +143,6 @@ class ChatService {
         })
         .catchError((_) {});
 
-    // So'nggi o'qilmagan xabarlarni seen=true qilish
     final unseen = await _db
         .collection('chats')
         .doc(cid)
@@ -186,7 +165,6 @@ class ChatService {
     }
   }
 
-  // Typing holati
   Future<void> setTyping(String toUid, bool isTyping) async {
     final cid = chatId(_myUid, toUid);
     await _db
@@ -198,7 +176,6 @@ class ChatService {
         .catchError((_) {});
   }
 
-  // Typing stream (boshqa foydalanuvchi yozayaptimi)
   Stream<bool> typingStream(String otherUid) {
     final cid = chatId(_myUid, otherUid);
     return _db.collection('chats').doc(cid).snapshots().map((snap) {
@@ -209,7 +186,6 @@ class ChatService {
     });
   }
 
-  // Online holat (users collectionda)
   Future<void> setOnline(bool isOnline) async {
     await _db
         .collection('users')
@@ -221,7 +197,6 @@ class ChatService {
         .catchError((_) {});
   }
 
-  // Boshqa foydalanuvchi online holati stream
   Stream<Map<String, dynamic>> onlineStatusStream(String otherUid) {
     return _db.collection('users').doc(otherUid).snapshots().map((snap) {
       final data = snap.data() ?? {};
@@ -232,7 +207,6 @@ class ChatService {
     });
   }
 
-  // Barcha suhbatlar
   Stream<List<Map<String, dynamic>>> conversationsStream() {
     return _db
         .collection('chats')
@@ -244,7 +218,7 @@ class ChatService {
             data['chatId'] = d.id;
             return data;
           }).toList();
-          // In-memory sort — composite index talab qilmaydi
+          // Sorted in memory to avoid needing a composite index.
           docs.sort((a, b) {
             final aAt =
                 (a['lastMessageAt'] as Timestamp?)?.toDate() ?? DateTime(0);

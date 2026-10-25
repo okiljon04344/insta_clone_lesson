@@ -67,7 +67,9 @@ class SupabaseStorageService {
     }
 
     try {
-      await _client.storage.from(SupabaseConfig.bucket).uploadBinary(
+      await _client.storage
+          .from(SupabaseConfig.bucket)
+          .uploadBinary(
             path,
             bytes,
             fileOptions: FileOptions(

@@ -29,15 +29,13 @@ class AuthService {
   User? get currentFirebaseUser => _auth.currentUser;
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
-  // ─── Email/Parol bilan kirish ─────────────────────────────────────────────
   Future<UserModel> signInWithEmail({
     required String emailOrUsername,
     required String password,
   }) async {
     try {
       String email = emailOrUsername;
-
-      // Username bilan kirishni qo'llab-quvvatlash
+      // Usernames are resolved to the account's email first.
       if (!emailOrUsername.contains('@')) {
         final query = await _db
             .collection('users')
@@ -62,7 +60,6 @@ class AuthService {
     }
   }
 
-  // ─── Email bilan ro'yxatdan o'tish ────────────────────────────────────────
   Future<UserModel> registerWithEmail({
     required String email,
     required String password,
@@ -72,7 +69,6 @@ class AuthService {
     XFile? profileImage,
   }) async {
     try {
-      // Username band emasligini tekshirish
       final usernameQuery = await _db
           .collection('users')
           .where('username', isEqualTo: username.toLowerCase().trim())
@@ -83,25 +79,21 @@ class AuthService {
         throw AuthException('Bu foydalanuvchi nomi allaqachon band');
       }
 
-      // Firebase Auth da hisob yaratish
       final cred = await _auth.createUserWithEmailAndPassword(
         email: email.trim(),
         password: password,
       );
 
-      // Profil rasmini yuklash
       String photoUrl = '';
       if (profileImage != null) {
         photoUrl = await _uploadProfileImage(cred.user!.uid, profileImage);
       }
 
-      // Firebase Auth profilni yangilash
       await cred.user!.updateDisplayName(displayName);
       if (photoUrl.isNotEmpty) {
         await cred.user!.updatePhotoURL(photoUrl);
       }
 
-      // Firestore da foydalanuvchi yaratish
       final user = UserModel(
         uid: cred.user!.uid,
         email: email.trim(),
@@ -114,7 +106,6 @@ class AuthService {
 
       await _db.collection('users').doc(user.uid).set(user.toMap());
 
-      // Emailni tasdiqlash xati yuborish
       await cred.user!.sendEmailVerification();
 
       return user;
@@ -125,7 +116,6 @@ class AuthService {
     }
   }
 
-  // ─── Telefon raqam bilan kirish ───────────────────────────────────────────
   Future<void> sendOtp({
     required String phoneNumber,
     required Function(String verificationId) onCodeSent,
@@ -165,13 +155,11 @@ class AuthService {
       final cred = await _auth.signInWithCredential(credential);
       final uid = cred.user!.uid;
 
-      // Mavjud foydalanuvchimi tekshirish
       final doc = await _db.collection('users').doc(uid).get();
       if (doc.exists) {
         return UserModel.fromMap(doc.data()!);
       }
 
-      // Yangi foydalanuvchi — profil yaratish
       String photoUrl = '';
       if (profileImage != null) {
         photoUrl = await _uploadProfileImage(uid, profileImage);
@@ -197,7 +185,6 @@ class AuthService {
     }
   }
 
-  // ─── Google bilan kirish ──────────────────────────────────────────────────
   Future<UserModel> ensurePhoneUserProfile(
     UserCredential cred, {
     String? displayName,
@@ -262,13 +249,11 @@ class AuthService {
       }
       final uid = firebaseUser.uid;
 
-      // Mavjud foydalanuvchimi?
       final doc = await _db.collection('users').doc(uid).get();
       if (doc.exists) {
         return UserModel.fromMap(doc.data()!);
       }
 
-      // Yangi foydalanuvchi — Firestore da profil yaratish
       final googleEmail = firebaseUser.email ?? '';
       final baseUsername = googleEmail
           .split('@')
@@ -276,7 +261,7 @@ class AuthService {
           .replaceAll(RegExp(r'[^a-zA-Z0-9._]'), '_')
           .toLowerCase();
 
-      // Username noyobligini ta'minlash
+      // Append a numeric suffix until the username is unique.
       String finalUsername = baseUsername;
       int suffix = 1;
       while (true) {
@@ -311,7 +296,6 @@ class AuthService {
     }
   }
 
-  // ─── Parolni tiklash ──────────────────────────────────────────────────────
   Future<void> resetPassword(String email) async {
     try {
       await _auth.sendPasswordResetEmail(email: email.trim());
@@ -320,13 +304,11 @@ class AuthService {
     }
   }
 
-  // ─── Chiqish ──────────────────────────────────────────────────────────────
   Future<void> signOut() async {
     await _googleSignIn.signOut();
     await _auth.signOut();
   }
 
-  // ─── Joriy foydalanuvchini olish ──────────────────────────────────────────
   Future<UserModel?> getCurrentUser() async {
     final user = _auth.currentUser;
     if (user == null) return null;

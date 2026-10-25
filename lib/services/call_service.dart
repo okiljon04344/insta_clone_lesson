@@ -55,7 +55,7 @@ class CallService {
   final _db = FirebaseFirestore.instance;
   String get _myUid => FirebaseAuth.instance.currentUser!.uid;
 
-  // Qo'ng'iroq boshlash - qaytadi callId
+  /// Starts a call and returns its id.
   Future<String> initiateCall({
     required String toUid,
     required bool isVideo,
@@ -81,7 +81,6 @@ class CallService {
     return doc.id;
   }
 
-  // Qo'ng'iroq holatini stream'lash (chaqiruvchi uchun)
   Stream<CallStatus> callStatusStream(String callId) {
     return _db.collection('calls').doc(callId).snapshots().map((d) {
       final statusStr = d.data()?['status'] as String? ?? 'ended';
@@ -92,22 +91,18 @@ class CallService {
     });
   }
 
-  // Qabul qilish
   Future<void> acceptCall(String callId) async {
     await _db.collection('calls').doc(callId).update({'status': 'accepted'});
   }
 
-  // Rad etish
   Future<void> declineCall(String callId) async {
     await _db.collection('calls').doc(callId).update({'status': 'declined'});
   }
 
-  // Tugatish
   Future<void> endCall(String callId) async {
     await _db.collection('calls').doc(callId).update({'status': 'ended'});
   }
 
-  // Kiruvchi qo'ng'iroqlar (mening uchun)
   Stream<CallInfo?> incomingCallStream() {
     return _db
         .collection('calls')
@@ -120,7 +115,7 @@ class CallService {
         });
   }
 
-  // Eskirgan qo'ng'iroqlarni missed deb belgilash (30 soniyadan keyin)
+  /// Marks a call still ringing after 30 seconds as missed.
   Future<void> markMissedIfOld(String callId) async {
     final doc = await _db.collection('calls').doc(callId).get();
     if (!doc.exists) return;
