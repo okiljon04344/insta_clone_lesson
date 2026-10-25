@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../services/notification_service.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/user_avatar.dart';
 
 class CommentsScreen extends StatefulWidget {
   final String postId;
@@ -44,11 +45,9 @@ class _CommentsScreenState extends State<CommentsScreen> {
       final user = FirebaseAuth.instance.currentUser!;
       final db = FirebaseFirestore.instance;
 
-      // Foydalanuvchi ma'lumotlari
       final userDoc = await db.collection('users').doc(user.uid).get();
       final userData = userDoc.data() ?? {};
 
-      // Izoh qo'shish
       final commentRef = db
           .collection('posts')
           .doc(widget.postId)
@@ -65,12 +64,11 @@ class _CommentsScreenState extends State<CommentsScreen> {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      // commentsCount oshirish
       await db.collection('posts').doc(widget.postId).update({
         'commentsCount': FieldValue.increment(1),
       });
 
-      // Bildirishnoma yuborish (o'ziga emas)
+      // Don't notify the author about their own comment.
       if (widget.postOwnerId != user.uid) {
         await NotificationService().sendCommentNotification(
           toUid: widget.postOwnerId,
@@ -89,26 +87,16 @@ class _CommentsScreenState extends State<CommentsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.black,
       appBar: AppBar(
-        backgroundColor: AppTheme.black,
-        title: const Text(
-          'Izohlar',
-          style: TextStyle(
-            color: AppTheme.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-          ),
-        ),
+        title: const Text('Izohlar'),
         centerTitle: true,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(color: AppTheme.divider, height: 0.5),
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(),
         ),
       ),
       body: Column(
         children: [
-          // Izohlar ro'yxati
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
@@ -119,9 +107,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
                   .snapshots(),
               builder: (context, snap) {
                 if (snap.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                    child: CircularProgressIndicator(color: AppTheme.blue),
-                  );
+                  return const Center(child: CircularProgressIndicator());
                 }
 
                 final comments = snap.data?.docs ?? [];
@@ -133,22 +119,18 @@ class _CommentsScreenState extends State<CommentsScreen> {
                       children: [
                         Icon(
                           Icons.chat_bubble_outline,
-                          color: AppTheme.grey,
+                          color: AppTheme.muted,
                           size: 48,
                         ),
-                        SizedBox(height: 12),
+                        SizedBox(height: 16),
                         Text(
                           'Birinchi izoh qoldiring',
-                          style: TextStyle(
-                            color: AppTheme.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: AppTheme.titleStyle,
                         ),
-                        SizedBox(height: 4),
+                        SizedBox(height: 8),
                         Text(
                           'Fikrlaringizni baham ko\'ring',
-                          style: TextStyle(color: AppTheme.grey, fontSize: 13),
+                          style: TextStyle(color: AppTheme.muted, fontSize: 14),
                         ),
                       ],
                     ),
@@ -176,11 +158,10 @@ class _CommentsScreenState extends State<CommentsScreen> {
             ),
           ),
 
-          // Izoh yozish
           Container(
             decoration: const BoxDecoration(
-              color: AppTheme.black,
-              border: Border(top: BorderSide(color: AppTheme.divider)),
+              color: AppTheme.background,
+              border: Border(top: BorderSide(color: AppTheme.border)),
             ),
             child: Column(
               children: [
@@ -190,15 +171,12 @@ class _CommentsScreenState extends State<CommentsScreen> {
                       horizontal: 16,
                       vertical: 8,
                     ),
-                    color: AppTheme.darkGrey,
+                    color: AppTheme.surfaceMuted,
                     child: Row(
                       children: [
                         Text(
                           '@$_replyToUsername ga javob',
-                          style: const TextStyle(
-                            color: AppTheme.grey,
-                            fontSize: 12,
-                          ),
+                          style: AppTheme.captionStyle,
                         ),
                         const Spacer(),
                         GestureDetector(
@@ -208,7 +186,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
                           },
                           child: const Icon(
                             Icons.close,
-                            color: AppTheme.grey,
+                            color: AppTheme.muted,
                             size: 16,
                           ),
                         ),
@@ -222,32 +200,21 @@ class _CommentsScreenState extends State<CommentsScreen> {
                   ),
                   child: Row(
                     children: [
-                      _CurrentUserAvatar(),
+                      UserAvatar(
+                        photoUrl:
+                            FirebaseAuth.instance.currentUser?.photoURL ?? '',
+                        radius: 16,
+                      ),
                       const SizedBox(width: 10),
                       Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppTheme.darkGrey,
-                            borderRadius: BorderRadius.circular(24),
-                            border: Border.all(color: AppTheme.divider),
-                          ),
-                          child: TextField(
-                            controller: _controller,
-                            focusNode: _focusNode,
-                            style: const TextStyle(
-                              color: AppTheme.white,
-                              fontSize: 14,
-                            ),
-                            maxLines: null,
-                            decoration: const InputDecoration(
-                              hintText: 'Izoh qo\'shing...',
-                              hintStyle: TextStyle(color: AppTheme.grey),
-                              border: InputBorder.none,
-                            ),
+                        child: TextField(
+                          controller: _controller,
+                          focusNode: _focusNode,
+                          style: AppTheme.bodyStyle,
+                          maxLines: null,
+                          decoration: const InputDecoration(
+                            hintText: 'Izoh qo\'shing...',
+                            isDense: true,
                           ),
                         ),
                       ),
@@ -259,15 +226,14 @@ class _CommentsScreenState extends State<CommentsScreen> {
                                 width: 24,
                                 height: 24,
                                 child: CircularProgressIndicator(
-                                  color: AppTheme.blue,
                                   strokeWidth: 2,
                                 ),
                               )
                             : const Text(
                                 'Yuborish',
                                 style: TextStyle(
-                                  color: AppTheme.blue,
-                                  fontWeight: FontWeight.bold,
+                                  color: AppTheme.accent,
+                                  fontWeight: FontWeight.w600,
                                   fontSize: 14,
                                 ),
                               ),
@@ -280,23 +246,6 @@ class _CommentsScreenState extends State<CommentsScreen> {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _CurrentUserAvatar extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-    return CircleAvatar(
-      radius: 16,
-      backgroundColor: AppTheme.darkGrey,
-      backgroundImage: (user?.photoURL?.isNotEmpty == true)
-          ? NetworkImage(user!.photoURL!)
-          : null,
-      child: (user?.photoURL?.isNotEmpty != true)
-          ? const Icon(Icons.person, color: AppTheme.grey, size: 16)
-          : null,
     );
   }
 }
@@ -372,16 +321,7 @@ class _CommentTileState extends State<_CommentTile> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
-            radius: 16,
-            backgroundColor: AppTheme.darkGrey,
-            backgroundImage: photoUrl.isNotEmpty
-                ? NetworkImage(photoUrl)
-                : null,
-            child: photoUrl.isEmpty
-                ? const Icon(Icons.person, color: AppTheme.grey, size: 16)
-                : null,
-          ),
+          UserAvatar(photoUrl: photoUrl, radius: 16),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -390,43 +330,24 @@ class _CommentTileState extends State<_CommentTile> {
                 RichText(
                   text: TextSpan(
                     children: [
-                      TextSpan(
-                        text: '$username ',
-                        style: const TextStyle(
-                          color: AppTheme.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                        ),
-                      ),
-                      TextSpan(
-                        text: text,
-                        style: const TextStyle(
-                          color: AppTheme.white,
-                          fontSize: 13,
-                        ),
-                      ),
+                      TextSpan(text: '$username ', style: AppTheme.labelStyle),
+                      TextSpan(text: text, style: AppTheme.bodyStyle),
                     ],
                   ),
                 ),
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    Text(
-                      _formatTime(createdAt),
-                      style: const TextStyle(
-                        color: AppTheme.grey,
-                        fontSize: 11,
-                      ),
-                    ),
+                    Text(_formatTime(createdAt), style: AppTheme.captionStyle),
                     const SizedBox(width: 12),
                     GestureDetector(
                       onTap: () => widget.onReply(username),
                       child: const Text(
                         'Javob',
                         style: TextStyle(
-                          color: AppTheme.grey,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
+                          color: AppTheme.muted,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
@@ -436,7 +357,7 @@ class _CommentTileState extends State<_CommentTile> {
                         onTap: _deleteComment,
                         child: const Text(
                           'O\'chirish',
-                          style: TextStyle(color: AppTheme.grey, fontSize: 11),
+                          style: AppTheme.captionStyle,
                         ),
                       ),
                     ],
@@ -445,20 +366,19 @@ class _CommentTileState extends State<_CommentTile> {
               ],
             ),
           ),
-          // Like
           GestureDetector(
             onTap: _toggleLike,
             child: Column(
               children: [
                 Icon(
                   _isLiked ? Icons.favorite : Icons.favorite_border,
-                  color: _isLiked ? AppTheme.red : AppTheme.grey,
-                  size: 14,
+                  color: _isLiked ? AppTheme.accent : AppTheme.muted,
+                  size: 16,
                 ),
                 if (_likesCount > 0)
                   Text(
                     '$_likesCount',
-                    style: const TextStyle(color: AppTheme.grey, fontSize: 10),
+                    style: const TextStyle(color: AppTheme.muted, fontSize: 11),
                   ),
               ],
             ),

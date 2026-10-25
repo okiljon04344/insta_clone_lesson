@@ -1,53 +1,164 @@
 import 'package:flutter/material.dart';
 
+/// Design tokens and the app-wide [ThemeData].
+///
+/// Light, neutral surfaces with a single teal accent that is only used for
+/// primary actions and active icons.
 class AppTheme {
-  static const Color black = Color(0xFF000000);
-  static const Color white = Color(0xFFFFFFFF);
-  static const Color grey = Color(0xFF8E8E8E);
-  static const Color darkGrey = Color(0xFF262626);
-  static const Color lightGrey = Color(0xFFDBDBDB);
-  static const Color divider = Color(0xFF363636);
-  static const Color red = Color(0xFFED4956);
-  static const Color blue = Color(0xFF0095F6);
+  AppTheme._();
 
-  static const LinearGradient storyGradient = LinearGradient(
-    colors: [Color(0xFFF58529), Color(0xFFDD2A7B), Color(0xFF8134AF)],
-    begin: Alignment.bottomLeft,
-    end: Alignment.topRight,
+  static const String appName = 'frame';
+
+  // Surfaces
+  static const Color background = Color(0xFFFFFFFF);
+  static const Color surfaceMuted = Color(0xFFF5F5F4);
+  static const Color border = Color(0xFFE7E5E4);
+
+  // Content
+  static const Color ink = Color(0xFF1C1917);
+  static const Color muted = Color(0xFF78716C);
+  static const Color onAccent = Color(0xFFFFFFFF);
+
+  // Semantic
+  static const Color accent = Color(0xFF0F766E);
+  static const Color danger = Color(0xFFB91C1C);
+
+  static const double radius = 10;
+
+  // Type scale
+  static const TextStyle headlineStyle = TextStyle(
+    color: ink,
+    fontSize: 24,
+    fontWeight: FontWeight.w600,
+    letterSpacing: -0.4,
+  );
+  static const TextStyle titleStyle = TextStyle(
+    color: ink,
+    fontSize: 20,
+    fontWeight: FontWeight.w600,
+    letterSpacing: -0.2,
+  );
+  static const TextStyle bodyStyle = TextStyle(color: ink, fontSize: 14);
+  static const TextStyle labelStyle = TextStyle(
+    color: ink,
+    fontSize: 14,
+    fontWeight: FontWeight.w600,
+  );
+  static const TextStyle captionStyle = TextStyle(color: muted, fontSize: 12);
+  static const TextStyle wordmarkStyle = TextStyle(
+    color: ink,
+    fontSize: 28,
+    fontWeight: FontWeight.w700,
+    letterSpacing: -1,
   );
 
-  static const LinearGradient logoGradient = LinearGradient(
-    colors: [
-      Color(0xFFF58529),
-      Color(0xFFDD2A7B),
-      Color(0xFF8134AF),
-      Color(0xFF515BD4),
-    ],
-    begin: Alignment.bottomLeft,
-    end: Alignment.topRight,
+  static OutlineInputBorder _inputBorder(Color color) => OutlineInputBorder(
+    borderRadius: BorderRadius.circular(radius),
+    borderSide: BorderSide(color: color),
   );
 
-  static ThemeData darkTheme = ThemeData(
-    brightness: Brightness.dark,
-    scaffoldBackgroundColor: black,
+  static final ThemeData lightTheme = ThemeData(
+    useMaterial3: true,
+    brightness: Brightness.light,
+    scaffoldBackgroundColor: background,
+    colorScheme: const ColorScheme.light(
+      primary: accent,
+      onPrimary: onAccent,
+      surface: background,
+      onSurface: ink,
+      error: danger,
+      outline: border,
+    ),
+    dividerColor: border,
+    dividerTheme: const DividerThemeData(color: border, thickness: 1, space: 1),
+    iconTheme: const IconThemeData(color: ink),
     appBarTheme: const AppBarTheme(
-      backgroundColor: black,
+      backgroundColor: background,
+      surfaceTintColor: Colors.transparent,
       elevation: 0,
-      iconTheme: IconThemeData(color: white),
-      titleTextStyle: TextStyle(
-        color: white,
-        fontSize: 20,
-        fontWeight: FontWeight.bold,
-        fontFamily: 'Billabong',
+      scrolledUnderElevation: 0,
+      iconTheme: IconThemeData(color: ink),
+      titleTextStyle: titleStyle,
+    ),
+    textTheme: const TextTheme(
+      titleLarge: titleStyle,
+      titleMedium: labelStyle,
+      bodyLarge: bodyStyle,
+      bodyMedium: bodyStyle,
+      bodySmall: captionStyle,
+      labelLarge: labelStyle,
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: surfaceMuted,
+      hintStyle: const TextStyle(color: muted, fontSize: 14),
+      errorStyle: const TextStyle(color: danger, fontSize: 12),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      border: _inputBorder(border),
+      enabledBorder: _inputBorder(border),
+      focusedBorder: _inputBorder(accent),
+      errorBorder: _inputBorder(danger),
+      focusedErrorBorder: _inputBorder(danger),
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: accent,
+        foregroundColor: onAccent,
+        disabledBackgroundColor: accent.withValues(alpha: 0.4),
+        disabledForegroundColor: onAccent,
+        elevation: 0,
+        minimumSize: const Size.fromHeight(48),
+        textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(radius),
+        ),
       ),
     ),
-    colorScheme: const ColorScheme.dark(primary: blue, surface: black),
-    dividerColor: divider,
-    iconTheme: const IconThemeData(color: white),
-    textTheme: const TextTheme(
-      bodyLarge: TextStyle(color: white),
-      bodyMedium: TextStyle(color: white),
-      bodySmall: TextStyle(color: grey),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        foregroundColor: ink,
+        minimumSize: const Size.fromHeight(48),
+        side: const BorderSide(color: border),
+        textStyle: labelStyle,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(radius),
+        ),
+      ),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        foregroundColor: accent,
+        textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+      ),
+    ),
+    progressIndicatorTheme: const ProgressIndicatorThemeData(color: accent),
+    snackBarTheme: SnackBarThemeData(
+      backgroundColor: ink,
+      contentTextStyle: const TextStyle(color: background, fontSize: 14),
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(radius),
+      ),
+    ),
+    bottomSheetTheme: const BottomSheetThemeData(
+      backgroundColor: background,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+    ),
+    dialogTheme: DialogThemeData(
+      backgroundColor: background,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(radius),
+      ),
+    ),
+    tabBarTheme: const TabBarThemeData(
+      labelColor: accent,
+      unselectedLabelColor: muted,
+      indicatorColor: accent,
+      dividerColor: border,
     ),
   );
 }

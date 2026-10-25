@@ -5,6 +5,8 @@ import '../../l10n/app_strings.dart';
 import '../../models/user_model.dart';
 import '../../services/follow_service.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/follow_chip.dart';
+import '../../widgets/user_avatar.dart';
 import 'profile_screen.dart';
 
 enum FollowListType { followers, following }
@@ -51,22 +53,10 @@ class _FollowListScreenState extends State<FollowListScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.black,
       appBar: AppBar(
-        backgroundColor: AppTheme.black,
-        title: Text(
-          widget.username,
-          style: const TextStyle(
-            color: AppTheme.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 17,
-          ),
-        ),
+        title: Text(widget.username),
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: AppTheme.white,
-          labelColor: AppTheme.white,
-          unselectedLabelColor: AppTheme.grey,
           tabs: [
             Tab(text: context.tr('followers')),
             Tab(text: context.tr('following')),
@@ -77,32 +67,23 @@ class _FollowListScreenState extends State<FollowListScreen>
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppTheme.darkGrey,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: TextField(
-                controller: _searchController,
-                style: const TextStyle(color: AppTheme.white),
-                onChanged: (value) =>
-                    setState(() => _query = value.trim().toLowerCase()),
-                decoration: InputDecoration(
-                  hintText: context.tr('search'),
-                  hintStyle: const TextStyle(color: AppTheme.grey),
-                  border: InputBorder.none,
-                  prefixIcon: const Icon(Icons.search, color: AppTheme.grey),
-                  suffixIcon: _query.isEmpty
-                      ? null
-                      : IconButton(
-                          onPressed: () {
-                            _searchController.clear();
-                            setState(() => _query = '');
-                          },
-                          icon: const Icon(Icons.close, color: AppTheme.grey),
-                        ),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                ),
+            child: TextField(
+              controller: _searchController,
+              style: AppTheme.bodyStyle,
+              onChanged: (value) =>
+                  setState(() => _query = value.trim().toLowerCase()),
+              decoration: InputDecoration(
+                hintText: context.tr('search'),
+                prefixIcon: const Icon(Icons.search, color: AppTheme.muted),
+                suffixIcon: _query.isEmpty
+                    ? null
+                    : IconButton(
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _query = '');
+                        },
+                        icon: const Icon(Icons.close, color: AppTheme.muted),
+                      ),
               ),
             ),
           ),
@@ -154,9 +135,7 @@ class _FollowUsersList extends StatelessWidget {
           .snapshots(),
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: CircularProgressIndicator(color: AppTheme.blue),
-          );
+          return const Center(child: CircularProgressIndicator());
         }
 
         final docs = snap.data?.docs ?? [];
@@ -166,7 +145,7 @@ class _FollowUsersList extends StatelessWidget {
               type == FollowListType.followers
                   ? context.tr('followers_empty')
                   : context.tr('following_empty'),
-              style: const TextStyle(color: AppTheme.grey, fontSize: 14),
+              style: const TextStyle(color: AppTheme.muted, fontSize: 14),
             ),
           );
         }
@@ -183,15 +162,12 @@ class _FollowUsersList extends StatelessWidget {
               builder: (context, userSnap) {
                 if (!userSnap.hasData) {
                   return const ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: AppTheme.darkGrey,
-                      child: Icon(Icons.person, color: AppTheme.grey),
-                    ),
-                    title: Text('...', style: TextStyle(color: AppTheme.grey)),
+                    leading: UserAvatar(photoUrl: '', radius: 24),
+                    title: Text('...', style: TextStyle(color: AppTheme.muted)),
                   );
                 }
 
-                final data = userSnap.data!.data();
+                final data = userSnap.data?.data();
                 if (data == null) return const SizedBox.shrink();
                 final user = UserModel.fromMap(data);
                 final myUid = FirebaseAuth.instance.currentUser?.uid ?? '';
@@ -213,31 +189,15 @@ class _FollowUsersList extends StatelessWidget {
                       ),
                     );
                   },
-                  leading: CircleAvatar(
-                    radius: 24,
-                    backgroundColor: AppTheme.darkGrey,
-                    backgroundImage: user.photoUrl.isNotEmpty
-                        ? NetworkImage(user.photoUrl)
-                        : null,
-                    child: user.photoUrl.isEmpty
-                        ? const Icon(Icons.person, color: AppTheme.grey)
-                        : null,
-                  ),
+                  leading: UserAvatar(photoUrl: user.photoUrl, radius: 24),
                   title: Row(
                     children: [
-                      Text(
-                        user.username,
-                        style: const TextStyle(
-                          color: AppTheme.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
+                      Text(user.username, style: AppTheme.labelStyle),
                       if (user.isVerified) ...[
                         const SizedBox(width: 4),
                         const Icon(
                           Icons.verified,
-                          color: AppTheme.blue,
+                          color: AppTheme.accent,
                           size: 14,
                         ),
                       ],
@@ -245,7 +205,7 @@ class _FollowUsersList extends StatelessWidget {
                   ),
                   subtitle: Text(
                     user.displayName,
-                    style: const TextStyle(color: AppTheme.grey, fontSize: 12),
+                    style: AppTheme.captionStyle,
                   ),
                   trailing: user.uid == myUid
                       ? null
@@ -292,35 +252,13 @@ class _FollowActionButtonState extends State<_FollowActionButton> {
       stream: FollowService().isFollowingStream(widget.userId),
       builder: (context, snap) {
         final isFollowing = snap.data ?? false;
-        return GestureDetector(
-          onTap: _isLoading ? null : () => _toggle(isFollowing),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-            decoration: BoxDecoration(
-              color: isFollowing ? AppTheme.darkGrey : AppTheme.blue,
-              borderRadius: BorderRadius.circular(8),
-              border: isFollowing ? Border.all(color: AppTheme.divider) : null,
-            ),
-            child: _isLoading
-                ? const SizedBox(
-                    width: 14,
-                    height: 14,
-                    child: CircularProgressIndicator(
-                      color: AppTheme.white,
-                      strokeWidth: 2,
-                    ),
-                  )
-                : Text(
-                    isFollowing
-                        ? context.tr('following_state')
-                        : context.tr('follow'),
-                    style: const TextStyle(
-                      color: AppTheme.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-          ),
+        return FollowChip(
+          label: isFollowing
+              ? context.tr('following_state')
+              : context.tr('follow'),
+          isActive: isFollowing,
+          isLoading: _isLoading,
+          onTap: () => _toggle(isFollowing),
         );
       },
     );

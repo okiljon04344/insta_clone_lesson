@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -7,6 +6,7 @@ import '../../l10n/app_strings.dart';
 import '../../theme/app_theme.dart';
 import '../../services/auth_service.dart';
 import '../../services/follow_service.dart';
+import '../../widgets/post_image.dart';
 import '../chat/chat_screen.dart';
 import 'edit_profile_screen.dart';
 import 'saved_posts_screen.dart';
@@ -53,22 +53,13 @@ class _ProfileScreenState extends State<ProfileScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.black,
       appBar: AppBar(
-        backgroundColor: AppTheme.black,
         title: Row(
           children: [
-            Text(
-              widget.user.username,
-              style: const TextStyle(
-                color: AppTheme.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
-            ),
+            Text(widget.user.username, style: AppTheme.titleStyle),
             if (widget.user.isVerified) ...[
               const SizedBox(width: 4),
-              const Icon(Icons.verified, color: AppTheme.blue, size: 16),
+              const Icon(Icons.verified, color: AppTheme.accent, size: 16),
             ],
           ],
         ),
@@ -76,23 +67,14 @@ class _ProfileScreenState extends State<ProfileScreen>
             ? [
                 IconButton(
                   onPressed: () {},
-                  icon: const Icon(
-                    Icons.add_box_outlined,
-                    color: AppTheme.white,
-                    size: 26,
-                  ),
+                  icon: const Icon(Icons.add_box_outlined),
                 ),
                 IconButton(
                   onPressed: () => _showMenuSheet(),
-                  icon: const Icon(Icons.menu, color: AppTheme.white, size: 26),
+                  icon: const Icon(Icons.menu),
                 ),
               ]
-            : [
-                IconButton(
-                  onPressed: () {},
-                  icon: const Icon(Icons.more_vert, color: AppTheme.white),
-                ),
-              ],
+            : [IconButton(onPressed: () {}, icon: const Icon(Icons.more_vert))],
       ),
       body: NestedScrollView(
         headerSliverBuilder: (_, _) => [
@@ -108,16 +90,14 @@ class _ProfileScreenState extends State<ProfileScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Avatar + Stats row
                       Row(
                         children: [
-                          // Avatar
                           Container(
                             width: 80,
                             height: 80,
-                            decoration: const BoxDecoration(
+                            decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              gradient: AppTheme.storyGradient,
+                              border: Border.all(color: AppTheme.border),
                             ),
                             child: Padding(
                               padding: const EdgeInsets.all(3),
@@ -125,16 +105,15 @@ class _ProfileScreenState extends State<ProfileScreen>
                                 child: CachedNetworkImage(
                                   imageUrl: widget.user.photoUrl.isNotEmpty
                                       ? widget.user.photoUrl
-                                      : 'https://ui-avatars.com/api/?name=${widget.user.displayName}&background=262626&color=fff',
+                                      : 'https://ui-avatars.com/api/?name=${widget.user.displayName}&background=f5f5f4&color=1c1917',
                                   fit: BoxFit.cover,
                                   placeholder: (_, _) =>
-                                      Container(color: AppTheme.darkGrey),
+                                      Container(color: AppTheme.surfaceMuted),
                                 ),
                               ),
                             ),
                           ),
                           const SizedBox(width: 24),
-                          // Stats — real-time Firestore dan
                           Expanded(
                             child: StreamBuilder<DocumentSnapshot>(
                               stream: FirebaseFirestore.instance
@@ -182,26 +161,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                         ],
                       ),
                       const SizedBox(height: 12),
-                      // Display name
-                      Text(
-                        widget.user.displayName,
-                        style: const TextStyle(
-                          color: AppTheme.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
+                      Text(widget.user.displayName, style: AppTheme.labelStyle),
                       const SizedBox(height: 4),
-                      // Bio
-                      Text(
-                        widget.user.bio,
-                        style: const TextStyle(
-                          color: AppTheme.white,
-                          fontSize: 13,
-                        ),
-                      ),
+                      Text(widget.user.bio, style: AppTheme.bodyStyle),
                       const SizedBox(height: 12),
-                      // Action buttons
                       widget.isCurrentUser
                           ? Row(
                               children: [
@@ -218,7 +181,6 @@ class _ProfileScreenState extends State<ProfileScreen>
                                               ),
                                             ),
                                           );
-                                      // Agar profil yangilangan bo'lsa, MainScreen ni qayta yuklash
                                       if (updated != null && mounted) {
                                         setState(() {});
                                       }
@@ -255,7 +217,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                             : context.tr('follow'),
                                         color: isFollowing
                                             ? null
-                                            : AppTheme.blue,
+                                            : AppTheme.accent,
                                         onTap: () async {
                                           if (isFollowing) {
                                             await _followService.unfollow(
@@ -296,7 +258,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                     ],
                   ),
                 ),
-                // Highlights (fake)
+                // Highlights are placeholders for now.
                 SizedBox(
                   height: 90,
                   child: ListView.separated(
@@ -311,10 +273,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                           height: 60,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            border: Border.all(
-                              color: AppTheme.divider,
-                              width: 1.5,
-                            ),
+                            border: Border.all(color: AppTheme.border),
                           ),
                           child: ClipOval(
                             child: CachedNetworkImage(
@@ -334,8 +293,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                             'Do\'stlar',
                           ][i],
                           style: const TextStyle(
-                            color: AppTheme.white,
-                            fontSize: 11,
+                            color: AppTheme.ink,
+                            fontSize: 12,
                           ),
                         ),
                       ],
@@ -343,12 +302,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                   ),
                 ),
                 const SizedBox(height: 8),
-                // Tab bar
                 TabBar(
                   controller: _tabController,
-                  indicatorColor: AppTheme.white,
-                  labelColor: AppTheme.white,
-                  unselectedLabelColor: AppTheme.grey,
                   tabs: const [
                     Tab(icon: Icon(Icons.grid_on, size: 22)),
                     Tab(icon: Icon(Icons.person_pin_outlined, size: 22)),
@@ -362,7 +317,6 @@ class _ProfileScreenState extends State<ProfileScreen>
           controller: _tabController,
           children: [
             _buildPostsGrid(),
-            // Tagged posts
             GridView.builder(
               padding: const EdgeInsets.all(1),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -375,7 +329,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 imageUrl:
                     'https://picsum.photos/seed/tagged${widget.user.uid}$i/300/300',
                 fit: BoxFit.cover,
-                placeholder: (_, _) => Container(color: AppTheme.darkGrey),
+                placeholder: (_, _) => Container(color: AppTheme.surfaceMuted),
               ),
             ),
           ],
@@ -392,9 +346,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           .snapshots(),
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: CircularProgressIndicator(color: AppTheme.blue),
-          );
+          return const Center(child: CircularProgressIndicator());
         }
 
         final posts = [...(snap.data?.docs ?? [])];
@@ -412,16 +364,9 @@ class _ProfileScreenState extends State<ProfileScreen>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.grid_on, color: AppTheme.grey, size: 44),
-                SizedBox(height: 10),
-                Text(
-                  'Hali postlar yo\'q',
-                  style: TextStyle(
-                    color: AppTheme.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                Icon(Icons.grid_on, color: AppTheme.muted, size: 40),
+                SizedBox(height: 12),
+                Text('Hali postlar yo\'q', style: AppTheme.titleStyle),
               ],
             ),
           );
@@ -439,30 +384,13 @@ class _ProfileScreenState extends State<ProfileScreen>
             final data = posts[i].data() as Map<String, dynamic>;
             final imageUrls = List<String>.from(data['imageUrls'] ?? []);
             final imageUrl = imageUrls.isNotEmpty ? imageUrls.first : '';
-            return GestureDetector(onTap: () {}, child: _postImage(imageUrl));
+            return GestureDetector(
+              onTap: () {},
+              child: PostImage(url: imageUrl),
+            );
           },
         );
       },
-    );
-  }
-
-  Widget _postImage(String url) {
-    if (url.startsWith('data:image')) {
-      try {
-        return Image.memory(
-          base64Decode(url.split(',').last),
-          fit: BoxFit.cover,
-        );
-      } catch (_) {
-        return Container(color: AppTheme.darkGrey);
-      }
-    }
-    if (url.isEmpty) return Container(color: AppTheme.darkGrey);
-    return CachedNetworkImage(
-      imageUrl: url,
-      fit: BoxFit.cover,
-      placeholder: (_, _) => Container(color: AppTheme.darkGrey),
-      errorWidget: (_, _, _) => Container(color: AppTheme.darkGrey),
     );
   }
 
@@ -471,19 +399,9 @@ class _ProfileScreenState extends State<ProfileScreen>
       onTap: onTap,
       child: Column(
         children: [
-          Text(
-            value,
-            style: const TextStyle(
-              color: AppTheme.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 17,
-            ),
-          ),
+          Text(value, style: AppTheme.titleStyle),
           const SizedBox(height: 2),
-          Text(
-            label,
-            style: const TextStyle(color: AppTheme.white, fontSize: 13),
-          ),
+          Text(label, style: AppTheme.captionStyle),
         ],
       ),
     );
@@ -500,18 +418,18 @@ class _ProfileScreenState extends State<ProfileScreen>
       child: Container(
         height: 34,
         decoration: BoxDecoration(
-          color: color ?? AppTheme.darkGrey,
-          borderRadius: BorderRadius.circular(8),
-          border: color == null ? Border.all(color: AppTheme.divider) : null,
+          color: color ?? AppTheme.background,
+          borderRadius: BorderRadius.circular(AppTheme.radius),
+          border: color == null ? Border.all(color: AppTheme.border) : null,
         ),
         alignment: Alignment.center,
         child: icon != null
-            ? Icon(icon, color: AppTheme.white, size: 20)
+            ? Icon(icon, color: AppTheme.ink, size: 20)
             : Text(
                 label,
-                style: const TextStyle(
-                  color: AppTheme.white,
-                  fontWeight: FontWeight.bold,
+                style: TextStyle(
+                  color: color == null ? AppTheme.ink : AppTheme.onAccent,
+                  fontWeight: FontWeight.w600,
                   fontSize: 13,
                 ),
               ),
@@ -522,10 +440,6 @@ class _ProfileScreenState extends State<ProfileScreen>
   void _showMenuSheet() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppTheme.darkGrey,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
       builder: (_) => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -534,7 +448,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: AppTheme.grey,
+              color: AppTheme.border,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -583,15 +497,14 @@ class _ProfileScreenState extends State<ProfileScreen>
             'Statistika',
             onTap: () => Navigator.pop(context),
           ),
-          const Divider(color: AppTheme.divider),
+          const Divider(),
           _menuItem(
             Icons.logout,
             context.tr('logout'),
-            color: AppTheme.red,
+            color: AppTheme.danger,
             onTap: () async {
               Navigator.pop(context);
               await AuthService().signOut();
-              // AuthWrapper avtomatik login ga yo'naltiradi
             },
           ),
           const SizedBox(height: 16),
@@ -607,10 +520,10 @@ class _ProfileScreenState extends State<ProfileScreen>
     required VoidCallback onTap,
   }) {
     return ListTile(
-      leading: Icon(icon, color: color ?? AppTheme.white),
+      leading: Icon(icon, color: color ?? AppTheme.ink),
       title: Text(
         label,
-        style: TextStyle(color: color ?? AppTheme.white, fontSize: 15),
+        style: TextStyle(color: color ?? AppTheme.ink, fontSize: 15),
       ),
       onTap: onTap,
     );

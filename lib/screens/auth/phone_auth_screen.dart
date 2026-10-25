@@ -8,6 +8,8 @@ import '../../l10n/app_strings.dart';
 import '../../services/auth_service.dart';
 import '../../services/supabase_storage_service.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/app_snackbar.dart';
+import '../../widgets/auth_widgets.dart';
 
 class PhoneAuthScreen extends StatefulWidget {
   const PhoneAuthScreen({super.key});
@@ -43,7 +45,7 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
 
   Future<void> _sendOtp() async {
     if (_fullPhoneNumber.isEmpty || _phoneController.text.trim().isEmpty) {
-      _showError(context.tr('enter_phone_number'));
+      showAppSnackBar(context, context.tr('enter_phone_number'), isError: true);
       return;
     }
 
@@ -59,12 +61,12 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
           _resendTimer = 60;
         });
         _startResendTimer();
-        _showSuccess(context.tr('otp_sent'));
+        showAppSnackBar(context, context.tr('otp_sent'));
       },
       onError: (error) {
         if (!mounted) return;
         setState(() => _isLoading = false);
-        _showError(error);
+        showAppSnackBar(context, error, isError: true);
       },
       onAutoVerified: _handleAutoVerified,
     );
@@ -87,7 +89,7 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
     } on AuthException catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
-      _showError(e.message);
+      showAppSnackBar(context, e.message, isError: true);
     }
   }
 
@@ -102,7 +104,7 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
 
   Future<void> _verifyOtp() async {
     if (_otpController.text.trim().length != 6) {
-      _showError(context.tr('enter_6_digit_code'));
+      showAppSnackBar(context, context.tr('enter_6_digit_code'), isError: true);
       return;
     }
 
@@ -125,7 +127,7 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
     } on AuthException catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
-      _showError(e.message);
+      showAppSnackBar(context, e.message, isError: true);
     }
   }
 
@@ -136,7 +138,7 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
 
     if (_usernameController.text.trim().isEmpty ||
         _displayNameController.text.trim().isEmpty) {
-      _showError(fillAllFieldsText);
+      showAppSnackBar(context, fillAllFieldsText, isError: true);
       return;
     }
 
@@ -152,17 +154,19 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
           .where('username', isEqualTo: username)
           .limit(1)
           .get();
+      if (!mounted) return;
       if (usernameQuery.docs.isNotEmpty) {
-        _showError(usernameTakenText);
+        showAppSnackBar(context, usernameTakenText, isError: true);
         setState(() => _isLoading = false);
         return;
       }
 
       String photoUrl = '';
-      if (_profileImage != null) {
+      final profileImage = _profileImage;
+      if (profileImage != null) {
         photoUrl = await SupabaseStorageService().uploadAvatar(
           uid: user.uid,
-          image: _profileImage!,
+          image: profileImage,
         );
         await user.updatePhotoURL(photoUrl);
       }
@@ -176,7 +180,9 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
 
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
-      if (mounted) _showError('$errorPrefixText: $e');
+      if (mounted) {
+        showAppSnackBar(context, '$errorPrefixText: $e', isError: true);
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -198,34 +204,10 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
     }
   }
 
-  void _showError(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: AppTheme.red,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-    );
-  }
-
-  void _showSuccess(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: Colors.green,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.black,
       appBar: AppBar(
-        backgroundColor: AppTheme.black,
         leading: IconButton(
           onPressed: () {
             if (_isNewUser) {
@@ -236,20 +218,9 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
               Navigator.pop(context);
             }
           },
-          icon: const Icon(Icons.arrow_back_ios, color: AppTheme.white),
+          icon: const Icon(Icons.arrow_back_ios_new, size: 20),
         ),
-        title: ShaderMask(
-          shaderCallback: (b) => AppTheme.logoGradient.createShader(b),
-          child: const Text(
-            'Instagram',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-              fontStyle: FontStyle.italic,
-            ),
-          ),
-        ),
+        title: const Text(AppTheme.appName, style: AppTheme.wordmarkStyle),
         centerTitle: true,
       ),
       body: AnimatedSwitcher(
@@ -264,331 +235,162 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
   }
 
   Widget _buildPhoneView() {
-    return SingleChildScrollView(
+    return _Page(
       key: const ValueKey('phone'),
-      padding: const EdgeInsets.all(32),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            context.tr('enter_phone_title'),
-            style: const TextStyle(
-              color: AppTheme.white,
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-            ),
+      children: [
+        AuthHeader(
+          title: context.tr('enter_phone_title'),
+          subtitle: context.tr('enter_phone_subtitle'),
+        ),
+        const SizedBox(height: 32),
+        IntlPhoneField(
+          controller: _phoneController,
+          initialCountryCode: 'UZ',
+          keyboardType: TextInputType.phone,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          style: AppTheme.bodyStyle,
+          dropdownTextStyle: AppTheme.bodyStyle,
+          decoration: InputDecoration(
+            hintText: context.tr('phone_placeholder'),
+            counterText: '',
           ),
-          const SizedBox(height: 8),
-          Text(
-            context.tr('enter_phone_subtitle'),
-            style: const TextStyle(color: AppTheme.grey, fontSize: 14),
-          ),
-          const SizedBox(height: 32),
-          IntlPhoneField(
-            controller: _phoneController,
-            initialCountryCode: 'UZ',
-            keyboardType: TextInputType.phone,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            style: const TextStyle(color: AppTheme.white, fontSize: 14),
-            dropdownTextStyle: const TextStyle(
-              color: AppTheme.white,
-              fontSize: 14,
-            ),
-            decoration: InputDecoration(
-              hintText: context.tr('phone_placeholder'),
-              hintStyle: const TextStyle(color: AppTheme.grey, fontSize: 13),
-              filled: true,
-              fillColor: AppTheme.darkGrey,
-              counterText: '',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: AppTheme.divider),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: AppTheme.divider),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: AppTheme.grey),
-              ),
-            ),
-            onChanged: (phone) => _fullPhoneNumber = phone.completeNumber,
-            onCountryChanged: (_) => _fullPhoneNumber = '',
-          ),
-          const SizedBox(height: 12),
-          Text(
-            context.tr('phone_supported_countries'),
-            style: const TextStyle(color: AppTheme.grey, fontSize: 12),
-          ),
-          const SizedBox(height: 32),
-          _buildPrimaryButton(
-            label: context.tr('send_code'),
-            isLoading: _isLoading,
-            onTap: _sendOtp,
-          ),
-        ],
-      ),
+          onChanged: (phone) => _fullPhoneNumber = phone.completeNumber,
+          onCountryChanged: (_) => _fullPhoneNumber = '',
+        ),
+        const SizedBox(height: 12),
+        Text(
+          context.tr('phone_supported_countries'),
+          style: AppTheme.captionStyle,
+        ),
+        const SizedBox(height: 32),
+        PrimaryButton(
+          label: context.tr('send_code'),
+          isLoading: _isLoading,
+          onPressed: _sendOtp,
+        ),
+      ],
     );
   }
 
   Widget _buildOtpView() {
-    return SingleChildScrollView(
+    return _Page(
       key: const ValueKey('otp'),
-      padding: const EdgeInsets.all(32),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            context.tr('enter_code_title'),
-            style: const TextStyle(
-              color: AppTheme.white,
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-            ),
+      children: [
+        AuthHeader(
+          title: context.tr('enter_code_title'),
+          subtitle: context
+              .tr('code_sent_to')
+              .replaceAll('{phone}', _fullPhoneNumber),
+        ),
+        const SizedBox(height: 32),
+        TextField(
+          controller: _otpController,
+          keyboardType: TextInputType.number,
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly,
+            LengthLimitingTextInputFormatter(6),
+          ],
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: AppTheme.ink,
+            fontSize: 28,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 16,
           ),
-          const SizedBox(height: 8),
-          Text(
-            context.tr('code_sent_to').replaceAll('{phone}', _fullPhoneNumber),
-            style: const TextStyle(color: AppTheme.grey, fontSize: 14),
-          ),
-          const SizedBox(height: 32),
-          TextField(
-            controller: _otpController,
-            keyboardType: TextInputType.number,
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
-              LengthLimitingTextInputFormatter(6),
-            ],
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: AppTheme.white,
+          decoration: const InputDecoration(
+            hintText: '------',
+            hintStyle: TextStyle(
+              color: AppTheme.muted,
               fontSize: 28,
-              fontWeight: FontWeight.bold,
               letterSpacing: 16,
             ),
-            decoration: InputDecoration(
-              hintText: '------',
-              hintStyle: const TextStyle(
-                color: AppTheme.grey,
-                fontSize: 28,
-                letterSpacing: 16,
-              ),
-              filled: true,
-              fillColor: AppTheme.darkGrey,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppTheme.divider),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppTheme.divider),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppTheme.blue),
-              ),
-              contentPadding: const EdgeInsets.symmetric(vertical: 20),
-            ),
+            contentPadding: EdgeInsets.symmetric(vertical: 20),
           ),
-          const SizedBox(height: 24),
-          Center(
-            child: _resendTimer > 0
-                ? Text(
-                    '${context.tr('resend_in')}: ${_resendTimer}s',
-                    style: const TextStyle(color: AppTheme.grey, fontSize: 13),
-                  )
-                : TextButton(
-                    onPressed: _sendOtp,
-                    child: Text(
-                      context.tr('resend_code'),
-                      style: const TextStyle(
-                        color: AppTheme.blue,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-          ),
-          const SizedBox(height: 24),
-          _buildPrimaryButton(
-            label: context.tr('verify'),
-            isLoading: _isLoading,
-            onTap: _verifyOtp,
-          ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 24),
+        Center(
+          child: _resendTimer > 0
+              ? Text(
+                  '${context.tr('resend_in')}: ${_resendTimer}s',
+                  style: AppTheme.captionStyle,
+                )
+              : TextButton(
+                  onPressed: _sendOtp,
+                  child: Text(context.tr('resend_code')),
+                ),
+        ),
+        const SizedBox(height: 24),
+        PrimaryButton(
+          label: context.tr('verify'),
+          isLoading: _isLoading,
+          onPressed: _verifyOtp,
+        ),
+      ],
     );
   }
 
   Widget _buildCompleteProfileView() {
-    return SingleChildScrollView(
+    return _Page(
       key: const ValueKey('profile'),
+      children: [
+        AuthHeader(
+          title: context.tr('create_profile_title'),
+          subtitle: context.tr('create_profile_subtitle'),
+        ),
+        const SizedBox(height: 24),
+        Center(
+          child: AvatarPicker(
+            imageBytes: _profileImageBytes,
+            onTap: _pickImage,
+          ),
+        ),
+        const SizedBox(height: 24),
+        FieldLabel(context.tr('username_label')),
+        TextField(
+          controller: _usernameController,
+          style: AppTheme.bodyStyle,
+          decoration: InputDecoration(
+            hintText: context.tr('username_placeholder'),
+          ),
+        ),
+        const SizedBox(height: 16),
+        FieldLabel(context.tr('full_name_label')),
+        TextField(
+          controller: _displayNameController,
+          style: AppTheme.bodyStyle,
+          decoration: InputDecoration(
+            hintText: context.tr('full_name_placeholder'),
+          ),
+        ),
+        const SizedBox(height: 32),
+        PrimaryButton(
+          label: context.tr('start'),
+          isLoading: _isLoading,
+          onPressed: _completeProfile,
+        ),
+      ],
+    );
+  }
+}
+
+/// Scrollable page body with a readable maximum width on large screens.
+class _Page extends StatelessWidget {
+  final List<Widget> children;
+
+  const _Page({super.key, required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(32),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            context.tr('create_profile_title'),
-            style: const TextStyle(
-              color: AppTheme.white,
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-            ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 400),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: children,
           ),
-          const SizedBox(height: 8),
-          Text(
-            context.tr('create_profile_subtitle'),
-            style: const TextStyle(color: AppTheme.grey, fontSize: 14),
-          ),
-          const SizedBox(height: 28),
-          Center(
-            child: GestureDetector(
-              onTap: _pickImage,
-              child: Stack(
-                children: [
-                  Container(
-                    width: 90,
-                    height: 90,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppTheme.darkGrey,
-                      border: Border.all(color: AppTheme.divider, width: 2),
-                      image: _profileImageBytes != null
-                          ? DecorationImage(
-                              image: MemoryImage(_profileImageBytes!),
-                              fit: BoxFit.cover,
-                            )
-                          : null,
-                    ),
-                    child: _profileImageBytes == null
-                        ? const Icon(
-                            Icons.person,
-                            color: AppTheme.grey,
-                            size: 40,
-                          )
-                        : null,
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Container(
-                      width: 28,
-                      height: 28,
-                      decoration: const BoxDecoration(
-                        color: AppTheme.blue,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.camera_alt,
-                        color: Colors.white,
-                        size: 16,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            context.tr('username_label'),
-            style: const TextStyle(
-              color: AppTheme.white,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          _buildSimpleField(
-            _usernameController,
-            context.tr('username_placeholder'),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            context.tr('full_name_label'),
-            style: const TextStyle(
-              color: AppTheme.white,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          _buildSimpleField(
-            _displayNameController,
-            context.tr('full_name_placeholder'),
-          ),
-          const SizedBox(height: 32),
-          _buildPrimaryButton(
-            label: context.tr('start'),
-            isLoading: _isLoading,
-            onTap: _completeProfile,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSimpleField(TextEditingController controller, String hint) {
-    return TextField(
-      controller: controller,
-      style: const TextStyle(color: AppTheme.white, fontSize: 14),
-      decoration: InputDecoration(
-        hintText: hint,
-        hintStyle: const TextStyle(color: AppTheme.grey, fontSize: 13),
-        filled: true,
-        fillColor: AppTheme.darkGrey,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppTheme.divider),
         ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppTheme.divider),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppTheme.grey),
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 14,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPrimaryButton({
-    required String label,
-    required bool isLoading,
-    required VoidCallback onTap,
-  }) {
-    return SizedBox(
-      width: double.infinity,
-      height: 48,
-      child: ElevatedButton(
-        onPressed: isLoading ? null : onTap,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppTheme.blue,
-          disabledBackgroundColor: AppTheme.blue.withValues(alpha: 0.5),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-        child: isLoading
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2,
-                ),
-              )
-            : Text(
-                label,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
       ),
     );
   }

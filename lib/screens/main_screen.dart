@@ -46,7 +46,6 @@ class _MainScreenState extends State<MainScreen> {
     return StreamBuilder<CallInfo?>(
       stream: CallService().incomingCallStream(),
       builder: (context, callSnap) {
-        // Kiruvchi qo'ng'iroq keldi
         final incomingCall = callSnap.data;
         if (incomingCall != null) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -63,10 +62,7 @@ class _MainScreenState extends State<MainScreen> {
                 ProfileScreen(user: _currentUser!, isCurrentUser: true)
               else
                 const Scaffold(
-                  backgroundColor: AppTheme.black,
-                  body: Center(
-                    child: CircularProgressIndicator(color: AppTheme.blue),
-                  ),
+                  body: Center(child: CircularProgressIndicator()),
                 ),
             ],
           ),
@@ -79,7 +75,7 @@ class _MainScreenState extends State<MainScreen> {
   String? _lastHandledCallId;
 
   void _handleIncomingCall(CallInfo call) {
-    // Bir xil callId ni qayta-qayta ochmaslik
+    // The stream re-emits while the call is ringing; open the screen once.
     if (_lastHandledCallId == call.id) return;
     _lastHandledCallId = call.id;
 
@@ -112,7 +108,6 @@ class _MainScreenState extends State<MainScreen> {
             ),
           ),
         ).then((_) {
-          // Ekran yopilganda lastHandledCallId ni tozalash
           _lastHandledCallId = null;
         });
       },
@@ -122,7 +117,7 @@ class _MainScreenState extends State<MainScreen> {
   Widget _buildBottomNav() {
     return Container(
       decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: AppTheme.divider, width: 0.5)),
+        border: Border(top: BorderSide(color: AppTheme.border)),
       ),
       child: BottomNavigationBar(
         currentIndex: _currentIndex,
@@ -139,49 +134,41 @@ class _MainScreenState extends State<MainScreen> {
           }
           setState(() => _currentIndex = index);
         },
-        backgroundColor: AppTheme.black,
-        selectedItemColor: AppTheme.white,
-        unselectedItemColor: AppTheme.white,
+        backgroundColor: AppTheme.background,
+        elevation: 0,
+        selectedItemColor: AppTheme.accent,
+        unselectedItemColor: AppTheme.muted,
         showSelectedLabels: false,
         showUnselectedLabels: false,
         type: BottomNavigationBarType.fixed,
         items: [
           BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
+            icon: const Icon(Icons.home_outlined),
+            activeIcon: const Icon(Icons.home),
             label: context.tr('home'),
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.search),
-            activeIcon: Icon(Icons.search, color: AppTheme.white),
+            icon: const Icon(Icons.search),
             label: context.tr('search'),
           ),
           BottomNavigationBarItem(
-            icon: Container(
-              width: 26,
-              height: 26,
-              decoration: BoxDecoration(
-                border: Border.all(color: AppTheme.white, width: 2),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: const Icon(Icons.add, size: 18),
-            ),
+            icon: const Icon(Icons.add_box_outlined),
             label: context.tr('add'),
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.movie_outlined),
-            activeIcon: Icon(Icons.movie),
+            icon: const Icon(Icons.movie_outlined),
+            activeIcon: const Icon(Icons.movie),
             label: context.tr('reels'),
           ),
           BottomNavigationBarItem(
             icon: CircleAvatar(
               radius: 13,
-              backgroundColor: AppTheme.darkGrey,
+              backgroundColor: AppTheme.surfaceMuted,
               backgroundImage: (_currentUser?.photoUrl.isNotEmpty == true)
                   ? NetworkImage(_currentUser!.photoUrl)
                   : null,
               child: (_currentUser?.photoUrl.isNotEmpty != true)
-                  ? const Icon(Icons.person, size: 16, color: AppTheme.grey)
+                  ? const Icon(Icons.person, size: 16, color: AppTheme.muted)
                   : null,
             ),
             label: context.tr('profile'),

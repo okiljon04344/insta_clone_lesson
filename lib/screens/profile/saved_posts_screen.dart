@@ -1,9 +1,8 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/post_image.dart';
 
 class SavedPostsScreen extends StatelessWidget {
   const SavedPostsScreen({super.key});
@@ -13,18 +12,7 @@ class SavedPostsScreen extends StatelessWidget {
     final uid = FirebaseAuth.instance.currentUser!.uid;
 
     return Scaffold(
-      backgroundColor: AppTheme.black,
-      appBar: AppBar(
-        backgroundColor: AppTheme.black,
-        title: const Text(
-          'Saqlanganlar',
-          style: TextStyle(
-            color: AppTheme.white,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
+      appBar: AppBar(title: const Text('Saqlanganlar')),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('users')
@@ -34,9 +22,7 @@ class SavedPostsScreen extends StatelessWidget {
             .snapshots(),
         builder: (context, snap) {
           if (snap.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(color: AppTheme.blue),
-            );
+            return const Center(child: CircularProgressIndicator());
           }
 
           final saved = snap.data?.docs ?? [];
@@ -45,20 +31,13 @@ class SavedPostsScreen extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.bookmark_border, color: AppTheme.grey, size: 56),
-                  SizedBox(height: 12),
-                  Text(
-                    'Saqlangan postlar yo\'q',
-                    style: TextStyle(
-                      color: AppTheme.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  SizedBox(height: 6),
+                  Icon(Icons.bookmark_border, color: AppTheme.muted, size: 48),
+                  SizedBox(height: 16),
+                  Text('Saqlangan postlar yo\'q', style: AppTheme.titleStyle),
+                  SizedBox(height: 8),
                   Text(
                     'Postlardagi bookmark tugmasi bilan saqlang',
-                    style: TextStyle(color: AppTheme.grey, fontSize: 13),
+                    style: TextStyle(color: AppTheme.muted, fontSize: 14),
                   ),
                 ],
               ),
@@ -95,41 +74,12 @@ class _SavedPostTile extends StatelessWidget {
     return FutureBuilder<DocumentSnapshot>(
       future: FirebaseFirestore.instance.collection('posts').doc(postId).get(),
       builder: (context, snap) {
-        if (!snap.hasData) return Container(color: AppTheme.darkGrey);
+        if (!snap.hasData) return Container(color: AppTheme.surfaceMuted);
         final data = snap.data!.data() as Map<String, dynamic>?;
         final imageUrls = List<String>.from(data?['imageUrls'] ?? []);
         final imageUrl = imageUrls.isNotEmpty ? imageUrls.first : '';
-        return _PostImage(imageUrl: imageUrl);
+        return PostImage(url: imageUrl);
       },
-    );
-  }
-}
-
-class _PostImage extends StatelessWidget {
-  final String imageUrl;
-
-  const _PostImage({required this.imageUrl});
-
-  @override
-  Widget build(BuildContext context) {
-    if (imageUrl.startsWith('data:image')) {
-      try {
-        return Image.memory(
-          base64Decode(imageUrl.split(',').last),
-          fit: BoxFit.cover,
-        );
-      } catch (_) {
-        return Container(color: AppTheme.darkGrey);
-      }
-    }
-
-    if (imageUrl.isEmpty) return Container(color: AppTheme.darkGrey);
-
-    return CachedNetworkImage(
-      imageUrl: imageUrl,
-      fit: BoxFit.cover,
-      placeholder: (_, _) => Container(color: AppTheme.darkGrey),
-      errorWidget: (_, _, _) => Container(color: AppTheme.darkGrey),
     );
   }
 }

@@ -5,6 +5,7 @@ import '../../l10n/app_strings.dart';
 import '../../models/user_model.dart';
 import '../../services/chat_service.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/user_avatar.dart';
 import 'chat_screen.dart';
 
 class InboxScreen extends StatelessWidget {
@@ -15,20 +16,11 @@ class InboxScreen extends StatelessWidget {
     final myUid = FirebaseAuth.instance.currentUser!.uid;
 
     return Scaffold(
-      backgroundColor: AppTheme.black,
       appBar: AppBar(
-        backgroundColor: AppTheme.black,
-        title: Text(
-          context.tr('messages_title'),
-          style: const TextStyle(
-            color: AppTheme.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
-        ),
+        title: Text(context.tr('messages_title')),
         actions: [
           IconButton(
-            icon: const Icon(Icons.edit_outlined, color: AppTheme.white),
+            icon: const Icon(Icons.edit_outlined),
             tooltip: context.tr('new_message'),
             onPressed: () => _showNewChatDialog(context),
           ),
@@ -38,9 +30,7 @@ class InboxScreen extends StatelessWidget {
         stream: ChatService().conversationsStream(),
         builder: (context, snap) {
           if (snap.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(color: AppTheme.blue),
-            );
+            return const Center(child: CircularProgressIndicator());
           }
 
           final convs = snap.data ?? [];
@@ -52,35 +42,28 @@ class InboxScreen extends StatelessWidget {
                 children: [
                   const Icon(
                     Icons.chat_bubble_outline,
-                    color: AppTheme.grey,
-                    size: 64,
+                    color: AppTheme.muted,
+                    size: 48,
                   ),
                   const SizedBox(height: 16),
                   Text(
                     context.tr('messages_empty_title'),
-                    style: const TextStyle(
-                      color: AppTheme.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: AppTheme.titleStyle,
                   ),
                   const SizedBox(height: 8),
                   Text(
                     context.tr('messages_empty_subtitle'),
-                    style: const TextStyle(color: AppTheme.grey, fontSize: 14),
+                    style: const TextStyle(color: AppTheme.muted, fontSize: 14),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
                   ElevatedButton.icon(
                     onPressed: () => _showNewChatDialog(context),
-                    icon: const Icon(Icons.send),
+                    icon: const Icon(Icons.send, size: 18),
                     label: Text(context.tr('send_message_button')),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.blue,
-                      foregroundColor: AppTheme.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
+                      minimumSize: const Size(0, 44),
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
                     ),
                   ),
                 ],
@@ -108,22 +91,23 @@ class InboxScreen extends StatelessWidget {
                     .doc(otherUid)
                     .get(),
                 builder: (context, userSnap) {
-                  if (!userSnap.hasData) {
+                  final userData = userSnap.data?.data();
+                  if (userData == null) {
                     return const ListTile(
                       leading: CircleAvatar(
-                        backgroundColor: AppTheme.darkGrey,
-                        child: Icon(Icons.person, color: AppTheme.grey),
+                        backgroundColor: AppTheme.surfaceMuted,
+                        child: Icon(Icons.person, color: AppTheme.muted),
                       ),
                       title: SizedBox(
                         height: 14,
                         width: 100,
-                        child: ColoredBox(color: AppTheme.darkGrey),
+                        child: ColoredBox(color: AppTheme.surfaceMuted),
                       ),
                     );
                   }
 
                   final otherUser = UserModel.fromMap(
-                    userSnap.data!.data() as Map<String, dynamic>,
+                    userData as Map<String, dynamic>,
                   );
 
                   final lastMsg = conv['lastMessage'] as String? ?? '';
@@ -138,17 +122,7 @@ class InboxScreen extends StatelessWidget {
                     ),
                     leading: Stack(
                       children: [
-                        CircleAvatar(
-                          radius: 28,
-                          backgroundColor: AppTheme.darkGrey,
-                          backgroundImage: otherUser.photoUrl.isNotEmpty
-                              ? NetworkImage(otherUser.photoUrl)
-                              : null,
-                          child: otherUser.photoUrl.isEmpty
-                              ? const Icon(Icons.person, color: AppTheme.grey)
-                              : null,
-                        ),
-                        // Online dot
+                        UserAvatar(photoUrl: otherUser.photoUrl, radius: 28),
                         StreamBuilder<Map<String, dynamic>>(
                           stream: ChatService().onlineStatusStream(
                             otherUser.uid,
@@ -164,10 +138,10 @@ class InboxScreen extends StatelessWidget {
                                 width: 13,
                                 height: 13,
                                 decoration: BoxDecoration(
-                                  color: Colors.green,
+                                  color: AppTheme.accent,
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                    color: AppTheme.black,
+                                    color: AppTheme.background,
                                     width: 2,
                                   ),
                                 ),
@@ -182,10 +156,10 @@ class InboxScreen extends StatelessWidget {
                         Text(
                           otherUser.username,
                           style: TextStyle(
-                            color: AppTheme.white,
+                            color: AppTheme.ink,
                             fontWeight: isSeen
                                 ? FontWeight.normal
-                                : FontWeight.bold,
+                                : FontWeight.w600,
                             fontSize: 14,
                           ),
                         ),
@@ -193,7 +167,7 @@ class InboxScreen extends StatelessWidget {
                           const SizedBox(width: 4),
                           const Icon(
                             Icons.verified,
-                            color: AppTheme.blue,
+                            color: AppTheme.accent,
                             size: 13,
                           ),
                         ],
@@ -207,7 +181,7 @@ class InboxScreen extends StatelessWidget {
                                 ? '${context.tr('you_prefix')}: $lastMsg'
                                 : lastMsg,
                             style: TextStyle(
-                              color: isSeen ? AppTheme.grey : AppTheme.white,
+                              color: isSeen ? AppTheme.muted : AppTheme.ink,
                               fontSize: 13,
                               fontWeight: isSeen
                                   ? FontWeight.normal
@@ -221,10 +195,7 @@ class InboxScreen extends StatelessWidget {
                           const SizedBox(width: 4),
                           Text(
                             _formatTime(context, lastAt),
-                            style: const TextStyle(
-                              color: AppTheme.grey,
-                              fontSize: 11,
-                            ),
+                            style: AppTheme.captionStyle,
                           ),
                         ],
                       ],
@@ -234,7 +205,7 @@ class InboxScreen extends StatelessWidget {
                             width: 10,
                             height: 10,
                             decoration: const BoxDecoration(
-                              color: AppTheme.blue,
+                              color: AppTheme.accent,
                               shape: BoxShape.circle,
                             ),
                           )
@@ -259,10 +230,6 @@ class InboxScreen extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppTheme.black,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
       builder: (_) => const _NewChatSheet(),
     );
   }
@@ -338,53 +305,35 @@ class _NewChatSheetState extends State<_NewChatSheet> {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: AppTheme.grey,
+              color: AppTheme.border,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          Text(
-            context.tr('new_message'),
-            style: const TextStyle(
-              color: AppTheme.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
-          ),
+          Text(context.tr('new_message'), style: AppTheme.labelStyle),
           const SizedBox(height: 12),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppTheme.darkGrey,
-                borderRadius: BorderRadius.circular(10),
+            child: TextField(
+              controller: _searchController,
+              autofocus: true,
+              style: AppTheme.bodyStyle,
+              decoration: InputDecoration(
+                hintText: context.tr('search_user'),
+                prefixIcon: const Icon(Icons.search, color: AppTheme.muted),
               ),
-              child: TextField(
-                controller: _searchController,
-                autofocus: true,
-                style: const TextStyle(color: AppTheme.white),
-                decoration: InputDecoration(
-                  hintText: context.tr('search_user'),
-                  hintStyle: const TextStyle(color: AppTheme.grey),
-                  prefixIcon: const Icon(Icons.search, color: AppTheme.grey),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-                onChanged: _search,
-              ),
+              onChanged: _search,
             ),
           ),
           const SizedBox(height: 8),
-          const Divider(color: AppTheme.divider, height: 1),
+          const Divider(),
           Expanded(
             child: _isLoading
-                ? const Center(
-                    child: CircularProgressIndicator(color: AppTheme.blue),
-                  )
+                ? const Center(child: CircularProgressIndicator())
                 : _results.isEmpty
                 ? Center(
                     child: Text(
                       context.tr('user_not_found'),
-                      style: const TextStyle(color: AppTheme.grey),
+                      style: const TextStyle(color: AppTheme.muted),
                     ),
                   )
                 : ListView.builder(
@@ -393,29 +342,15 @@ class _NewChatSheetState extends State<_NewChatSheet> {
                     itemBuilder: (_, i) {
                       final user = _results[i];
                       return ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: AppTheme.darkGrey,
-                          backgroundImage: user.photoUrl.isNotEmpty
-                              ? NetworkImage(user.photoUrl)
-                              : null,
-                          child: user.photoUrl.isEmpty
-                              ? const Icon(Icons.person, color: AppTheme.grey)
-                              : null,
-                        ),
+                        leading: UserAvatar(photoUrl: user.photoUrl),
                         title: Row(
                           children: [
-                            Text(
-                              user.username,
-                              style: const TextStyle(
-                                color: AppTheme.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                            Text(user.username, style: AppTheme.labelStyle),
                             if (user.isVerified) ...[
                               const SizedBox(width: 4),
                               const Icon(
                                 Icons.verified,
-                                color: AppTheme.blue,
+                                color: AppTheme.accent,
                                 size: 14,
                               ),
                             ],
@@ -423,7 +358,7 @@ class _NewChatSheetState extends State<_NewChatSheet> {
                         ),
                         subtitle: Text(
                           user.displayName,
-                          style: const TextStyle(color: AppTheme.grey),
+                          style: const TextStyle(color: AppTheme.muted),
                         ),
                         onTap: () {
                           Navigator.pop(context);

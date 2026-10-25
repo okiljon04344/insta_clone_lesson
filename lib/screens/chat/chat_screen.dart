@@ -8,6 +8,8 @@ import '../../l10n/app_strings.dart';
 import '../../models/user_model.dart';
 import '../../services/chat_service.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/app_snackbar.dart';
+import '../../widgets/user_avatar.dart';
 import 'call_screen.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -38,7 +40,6 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   void dispose() {
-    // Typing ni o'chirish
     _chatService.setTyping(widget.otherUser.uid, false);
     _chatService.setOnline(false);
     _controller.dispose();
@@ -74,10 +75,6 @@ class _ChatScreenState extends State<ChatScreen> {
 
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
-      backgroundColor: AppTheme.darkGrey,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
-      ),
       builder: (context) {
         return SafeArea(
           child: Padding(
@@ -90,30 +87,18 @@ class _ChatScreenState extends State<ChatScreen> {
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 8),
                   decoration: BoxDecoration(
-                    color: AppTheme.grey.withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(99),
+                    color: AppTheme.border,
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
                 ListTile(
-                  leading: const Icon(
-                    Icons.photo_camera_outlined,
-                    color: AppTheme.white,
-                  ),
-                  title: Text(
-                    context.tr('camera'),
-                    style: const TextStyle(color: AppTheme.white),
-                  ),
+                  leading: const Icon(Icons.photo_camera_outlined),
+                  title: Text(context.tr('camera')),
                   onTap: () => Navigator.pop(context, ImageSource.camera),
                 ),
                 ListTile(
-                  leading: const Icon(
-                    Icons.photo_library_outlined,
-                    color: AppTheme.white,
-                  ),
-                  title: Text(
-                    context.tr('gallery'),
-                    style: const TextStyle(color: AppTheme.white),
-                  ),
+                  leading: const Icon(Icons.photo_library_outlined),
+                  title: Text(context.tr('gallery')),
                   onTap: () => Navigator.pop(context, ImageSource.gallery),
                 ),
               ],
@@ -144,8 +129,10 @@ class _ChatScreenState extends State<ChatScreen> {
       _scrollToBottom();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${context.tr('image_send_failed')}: $e')),
+      showAppSnackBar(
+        context,
+        '${context.tr('image_send_failed')}: $e',
+        isError: true,
       );
     } finally {
       if (mounted) setState(() => _isUploadingImage = false);
@@ -167,47 +154,28 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.black,
       appBar: AppBar(
-        backgroundColor: AppTheme.black,
         leadingWidth: 30,
         title: Row(
           children: [
-            CircleAvatar(
-              radius: 18,
-              backgroundColor: AppTheme.darkGrey,
-              backgroundImage: widget.otherUser.photoUrl.isNotEmpty
-                  ? NetworkImage(widget.otherUser.photoUrl)
-                  : null,
-              child: widget.otherUser.photoUrl.isEmpty
-                  ? const Icon(Icons.person, color: AppTheme.grey, size: 18)
-                  : null,
-            ),
+            UserAvatar(photoUrl: widget.otherUser.photoUrl, radius: 18),
             const SizedBox(width: 10),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    Text(
-                      widget.otherUser.username,
-                      style: const TextStyle(
-                        color: AppTheme.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                      ),
-                    ),
+                    Text(widget.otherUser.username, style: AppTheme.labelStyle),
                     if (widget.otherUser.isVerified) ...[
                       const SizedBox(width: 4),
                       const Icon(
                         Icons.verified,
-                        color: AppTheme.blue,
+                        color: AppTheme.accent,
                         size: 14,
                       ),
                     ],
                   ],
                 ),
-                // Online yoki lastSeen holati
                 StreamBuilder<Map<String, dynamic>>(
                   stream: _chatService.onlineStatusStream(widget.otherUser.uid),
                   builder: (ctx, snap) {
@@ -234,8 +202,8 @@ class _ChatScreenState extends State<ChatScreen> {
                     return Text(
                       subtitle,
                       style: TextStyle(
-                        color: isOnline ? Colors.green : AppTheme.grey,
-                        fontSize: 11,
+                        color: isOnline ? AppTheme.accent : AppTheme.muted,
+                        fontSize: 12,
                       ),
                     );
                   },
@@ -245,31 +213,25 @@ class _ChatScreenState extends State<ChatScreen> {
           ],
         ),
         actions: [
-          // Ovozli qo'ng'iroq
           IconButton(
-            icon: const Icon(Icons.call_outlined, color: AppTheme.white),
+            icon: const Icon(Icons.call_outlined),
             onPressed: () => _startCall(isVideo: false),
           ),
-          // Video qo'ng'iroq
           IconButton(
-            icon: const Icon(Icons.videocam_outlined, color: AppTheme.white),
+            icon: const Icon(Icons.videocam_outlined),
             onPressed: () => _startCall(isVideo: true),
           ),
         ],
       ),
       body: Column(
         children: [
-          const Divider(color: AppTheme.divider, height: 1),
-
-          // Xabarlar ro'yxati
+          const Divider(),
           Expanded(
             child: StreamBuilder<List<ChatMessage>>(
               stream: _chatService.messagesStream(widget.otherUser.uid),
               builder: (context, snap) {
                 if (snap.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                    child: CircularProgressIndicator(color: AppTheme.blue),
-                  );
+                  return const Center(child: CircularProgressIndicator());
                 }
 
                 final messages = snap.data ?? [];
@@ -282,42 +244,28 @@ class _ChatScreenState extends State<ChatScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        CircleAvatar(
+                        UserAvatar(
+                          photoUrl: widget.otherUser.photoUrl,
                           radius: 40,
-                          backgroundColor: AppTheme.darkGrey,
-                          backgroundImage: widget.otherUser.photoUrl.isNotEmpty
-                              ? NetworkImage(widget.otherUser.photoUrl)
-                              : null,
-                          child: widget.otherUser.photoUrl.isEmpty
-                              ? const Icon(
-                                  Icons.person,
-                                  color: AppTheme.grey,
-                                  size: 40,
-                                )
-                              : null,
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 16),
                         Text(
                           widget.otherUser.displayName,
-                          style: const TextStyle(
-                            color: AppTheme.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: AppTheme.titleStyle,
                         ),
                         Text(
                           '@${widget.otherUser.username}',
                           style: const TextStyle(
-                            color: AppTheme.grey,
+                            color: AppTheme.muted,
                             fontSize: 14,
                           ),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 16),
                         Text(
                           context.tr('start_chat_prompt'),
                           style: const TextStyle(
-                            color: AppTheme.grey,
-                            fontSize: 13,
+                            color: AppTheme.muted,
+                            fontSize: 14,
                           ),
                         ),
                       ],
@@ -354,7 +302,6 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ),
 
-          // Typing indicator
           StreamBuilder<bool>(
             stream: _chatService.typingStream(widget.otherUser.uid),
             builder: (ctx, snap) {
@@ -368,14 +315,11 @@ class _ChatScreenState extends State<ChatScreen> {
                 alignment: Alignment.centerLeft,
                 child: Row(
                   children: [
-                    _TypingDots(),
+                    const _TypingDots(),
                     const SizedBox(width: 8),
                     Text(
                       '${widget.otherUser.username} ${context.tr('typing')}...',
-                      style: const TextStyle(
-                        color: AppTheme.grey,
-                        fontSize: 12,
-                      ),
+                      style: AppTheme.captionStyle,
                     ),
                   ],
                 ),
@@ -383,12 +327,11 @@ class _ChatScreenState extends State<ChatScreen> {
             },
           ),
 
-          // Xabar kiritish
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: const BoxDecoration(
-              color: AppTheme.black,
-              border: Border(top: BorderSide(color: AppTheme.divider)),
+              color: AppTheme.background,
+              border: Border(top: BorderSide(color: AppTheme.border)),
             ),
             child: Row(
               children: [
@@ -397,53 +340,29 @@ class _ChatScreenState extends State<ChatScreen> {
                       ? const SizedBox(
                           width: 18,
                           height: 18,
-                          child: CircularProgressIndicator(
-                            color: AppTheme.blue,
-                            strokeWidth: 2,
-                          ),
+                          child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Icon(Icons.photo_outlined, color: AppTheme.white),
+                      : const Icon(Icons.photo_outlined),
                   onPressed: _isUploadingImage ? null : _pickImageSource,
                 ),
                 Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: AppTheme.darkGrey,
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: AppTheme.divider),
-                    ),
-                    child: Row(
-                      children: [
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: TextField(
-                            controller: _controller,
-                            style: const TextStyle(
-                              color: AppTheme.white,
-                              fontSize: 14,
-                            ),
-                            maxLines: null,
-                            decoration: InputDecoration(
-                              hintText: context.tr('write_message'),
-                              hintStyle: const TextStyle(color: AppTheme.grey),
-                              border: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(
-                                vertical: 10,
-                              ),
-                            ),
-                            onChanged: _onTextChanged,
-                            onSubmitted: (_) => _send(),
-                          ),
+                  child: TextField(
+                    controller: _controller,
+                    style: AppTheme.bodyStyle,
+                    maxLines: null,
+                    decoration: InputDecoration(
+                      hintText: context.tr('write_message'),
+                      isDense: true,
+                      suffixIcon: IconButton(
+                        icon: const Icon(
+                          Icons.emoji_emotions_outlined,
+                          color: AppTheme.muted,
                         ),
-                        IconButton(
-                          icon: const Icon(
-                            Icons.emoji_emotions_outlined,
-                            color: AppTheme.grey,
-                          ),
-                          onPressed: () {},
-                        ),
-                      ],
+                        onPressed: () {},
+                      ),
                     ),
+                    onChanged: _onTextChanged,
+                    onSubmitted: (_) => _send(),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -453,20 +372,20 @@ class _ChatScreenState extends State<ChatScreen> {
                     width: 44,
                     height: 44,
                     decoration: const BoxDecoration(
-                      color: AppTheme.blue,
+                      color: AppTheme.accent,
                       shape: BoxShape.circle,
                     ),
                     child: _isSending
                         ? const Padding(
                             padding: EdgeInsets.all(12),
                             child: CircularProgressIndicator(
-                              color: AppTheme.white,
+                              color: AppTheme.onAccent,
                               strokeWidth: 2,
                             ),
                           )
                         : const Icon(
                             Icons.send,
-                            color: AppTheme.white,
+                            color: AppTheme.onAccent,
                             size: 20,
                           ),
                   ),
@@ -518,6 +437,7 @@ class _MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final foreground = isMe ? AppTheme.onAccent : AppTheme.ink;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
@@ -531,16 +451,12 @@ class _MessageBubble extends StatelessWidget {
             ),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              color: isMe ? AppTheme.blue : AppTheme.darkGrey,
+              color: isMe ? AppTheme.accent : AppTheme.surfaceMuted,
               borderRadius: BorderRadius.only(
-                topLeft: const Radius.circular(18),
-                topRight: const Radius.circular(18),
-                bottomLeft: isMe
-                    ? const Radius.circular(18)
-                    : const Radius.circular(4),
-                bottomRight: isMe
-                    ? const Radius.circular(4)
-                    : const Radius.circular(18),
+                topLeft: const Radius.circular(12),
+                topRight: const Radius.circular(12),
+                bottomLeft: Radius.circular(isMe ? 12 : 4),
+                bottomRight: Radius.circular(isMe ? 4 : 12),
               ),
             ),
             child: Column(
@@ -562,7 +478,7 @@ class _MessageBubble extends StatelessWidget {
                       );
                     },
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(8),
                       child: CachedNetworkImage(
                         imageUrl: message.text,
                         width: MediaQuery.of(context).size.width * 0.58,
@@ -570,20 +486,17 @@ class _MessageBubble extends StatelessWidget {
                         fit: BoxFit.cover,
                         placeholder: (_, _) => Container(
                           height: 220,
-                          color: AppTheme.divider,
+                          color: AppTheme.border,
                           child: const Center(
-                            child: CircularProgressIndicator(
-                              color: AppTheme.blue,
-                              strokeWidth: 2,
-                            ),
+                            child: CircularProgressIndicator(strokeWidth: 2),
                           ),
                         ),
                         errorWidget: (_, _, _) => Container(
                           height: 220,
-                          color: AppTheme.divider,
+                          color: AppTheme.border,
                           child: const Icon(
                             Icons.broken_image_outlined,
-                            color: AppTheme.grey,
+                            color: AppTheme.muted,
                           ),
                         ),
                       ),
@@ -592,7 +505,7 @@ class _MessageBubble extends StatelessWidget {
                 else
                   Text(
                     message.text,
-                    style: const TextStyle(color: AppTheme.white, fontSize: 14),
+                    style: TextStyle(color: foreground, fontSize: 14),
                   ),
                 const SizedBox(height: 2),
                 Row(
@@ -601,8 +514,8 @@ class _MessageBubble extends StatelessWidget {
                     Text(
                       _formatTime(message.createdAt),
                       style: TextStyle(
-                        color: AppTheme.white.withValues(alpha: 0.6),
-                        fontSize: 10,
+                        color: foreground.withValues(alpha: 0.7),
+                        fontSize: 11,
                       ),
                     ),
                     if (isMe) ...[
@@ -610,9 +523,9 @@ class _MessageBubble extends StatelessWidget {
                       Icon(
                         message.seen ? Icons.done_all : Icons.done,
                         size: 12,
-                        color: message.seen
-                            ? Colors.lightBlueAccent
-                            : AppTheme.white.withValues(alpha: 0.6),
+                        color: foreground.withValues(
+                          alpha: message.seen ? 1 : 0.7,
+                        ),
                       ),
                     ],
                   ],
@@ -644,13 +557,10 @@ class _DateSeparator extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
-          color: AppTheme.darkGrey,
-          borderRadius: BorderRadius.circular(999),
+          color: AppTheme.surfaceMuted,
+          borderRadius: BorderRadius.circular(AppTheme.radius),
         ),
-        child: Text(
-          _label(context, date),
-          style: const TextStyle(color: AppTheme.grey, fontSize: 11),
-        ),
+        child: Text(_label(context, date), style: AppTheme.captionStyle),
       ),
     );
   }
@@ -677,14 +587,7 @@ class _ChatImagePreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.black,
-      appBar: AppBar(
-        backgroundColor: AppTheme.black,
-        title: Text(
-          sentAt,
-          style: const TextStyle(color: AppTheme.white, fontSize: 14),
-        ),
-      ),
+      appBar: AppBar(title: Text(sentAt, style: AppTheme.bodyStyle)),
       body: Center(
         child: InteractiveViewer(
           minScale: 0.8,
@@ -692,12 +595,11 @@ class _ChatImagePreview extends StatelessWidget {
           child: CachedNetworkImage(
             imageUrl: imageUrl,
             fit: BoxFit.contain,
-            placeholder: (_, _) => const Center(
-              child: CircularProgressIndicator(color: AppTheme.blue),
-            ),
+            placeholder: (_, _) =>
+                const Center(child: CircularProgressIndicator()),
             errorWidget: (_, _, _) => const Icon(
               Icons.broken_image_outlined,
-              color: AppTheme.grey,
+              color: AppTheme.muted,
               size: 42,
             ),
           ),
@@ -708,6 +610,8 @@ class _ChatImagePreview extends StatelessWidget {
 }
 
 class _TypingDots extends StatefulWidget {
+  const _TypingDots();
+
   @override
   State<_TypingDots> createState() => _TypingDotsState();
 }
@@ -747,7 +651,7 @@ class _TypingDotsState extends State<_TypingDots>
               height: 6,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppTheme.grey.withValues(alpha: 0.3 + opacity * 0.7),
+                color: AppTheme.muted.withValues(alpha: 0.3 + opacity * 0.7),
               ),
             );
           }),

@@ -7,17 +7,12 @@ class ReelsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.black,
       appBar: AppBar(
-        backgroundColor: AppTheme.black,
-        title: const Text(
-          'Reels',
-          style: TextStyle(color: AppTheme.white, fontWeight: FontWeight.bold),
-        ),
+        title: const Text('Reels'),
         actions: [
           IconButton(
             onPressed: () {},
-            icon: const Icon(Icons.camera_alt_outlined, color: AppTheme.white),
+            icon: const Icon(Icons.camera_alt_outlined),
           ),
         ],
       ),
@@ -29,6 +24,23 @@ class ReelsScreen extends StatelessWidget {
     );
   }
 }
+
+// Placeholder content until real video posts exist.
+const _reelUsers = [
+  'aziz_dev',
+  'malika_photo',
+  'sardor_travels',
+  'nodira_art',
+  'jasur_fitness',
+];
+const _reelCaptions = [
+  'Flutter animatsiyasi #flutter #coding',
+  'Toshkentning kechki manzarasi #tashkent',
+  'Samarqand - Sharq darvozasi #travel',
+  'Yangi rasm davomi #art #creative',
+  'Sabahlik mashq #fitness #gym',
+];
+const _reelSeeds = ['reel1', 'reel2', 'reel3', 'reel4', 'reel5'];
 
 class _ReelItem extends StatefulWidget {
   final int index;
@@ -50,48 +62,29 @@ class _ReelItemState extends State<_ReelItem> {
 
   @override
   Widget build(BuildContext context) {
-    final users = [
-      'aziz_dev',
-      'malika_photo',
-      'sardor_travels',
-      'nodira_art',
-      'jasur_fitness',
-    ];
-    final captions = [
-      'Flutter animatsiyasi 🚀 #flutter #coding',
-      'Toshkentning kechki manzarasi 🌆 #tashkent',
-      'Samarqand - Sharq darvozasi ✨ #travel',
-      'Yangi rasm davomi 🎨 #art #creative',
-      'Sabahlik mashq 💪 #fitness #gym',
-    ];
-    final seeds = ['reel1', 'reel2', 'reel3', 'reel4', 'reel5'];
+    final seed = _reelSeeds[widget.index % _reelSeeds.length];
 
     return Stack(
       fit: StackFit.expand,
       children: [
-        // Background image (simulating video)
         Image.network(
-          'https://picsum.photos/seed/${seeds[widget.index % seeds.length]}/400/700',
+          'https://picsum.photos/seed/$seed/400/700',
           fit: BoxFit.cover,
           loadingBuilder: (_, child, progress) {
             if (progress == null) return child;
-            return Container(color: AppTheme.darkGrey);
+            return Container(color: AppTheme.surfaceMuted);
           },
         ),
-        // Gradient overlay
+        // Scrim so the white text stays readable on bright frames.
         Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [
-                Colors.transparent,
-                Colors.black.withValues(alpha: 0.7),
-              ],
+              colors: [Colors.transparent, Colors.black.withValues(alpha: 0.7)],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
             ),
           ),
         ),
-        // Play icon in center
         const Center(
           child: Icon(
             Icons.play_circle_outline,
@@ -99,7 +92,6 @@ class _ReelItemState extends State<_ReelItem> {
             size: 64,
           ),
         ),
-        // Right side actions
         Positioned(
           right: 12,
           bottom: 120,
@@ -114,7 +106,7 @@ class _ReelItemState extends State<_ReelItem> {
                   children: [
                     Icon(
                       _isLiked ? Icons.favorite : Icons.favorite_border,
-                      color: _isLiked ? AppTheme.red : Colors.white,
+                      color: Colors.white,
                       size: 30,
                     ),
                     const SizedBox(height: 4),
@@ -156,7 +148,6 @@ class _ReelItemState extends State<_ReelItem> {
             ],
           ),
         ),
-        // Bottom info
         Positioned(
           left: 12,
           right: 70,
@@ -169,12 +160,12 @@ class _ReelItemState extends State<_ReelItem> {
                   CircleAvatar(
                     radius: 16,
                     backgroundImage: NetworkImage(
-                      'https://picsum.photos/seed/${seeds[widget.index % seeds.length]}/100/100',
+                      'https://picsum.photos/seed/$seed/100/100',
                     ),
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    users[widget.index % users.length],
+                    _reelUsers[widget.index % _reelUsers.length],
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -202,7 +193,7 @@ class _ReelItemState extends State<_ReelItem> {
               ),
               const SizedBox(height: 8),
               Text(
-                captions[widget.index % captions.length],
+                _reelCaptions[widget.index % _reelCaptions.length],
                 style: const TextStyle(color: Colors.white, fontSize: 13),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,

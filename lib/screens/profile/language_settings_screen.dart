@@ -36,39 +36,19 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen> {
     }).toList();
 
     return Scaffold(
-      backgroundColor: AppTheme.black,
-      appBar: AppBar(
-        backgroundColor: AppTheme.black,
-        title: Text(
-          context.tr('language_settings'),
-          style: const TextStyle(
-            color: AppTheme.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 17,
-          ),
-        ),
-      ),
+      appBar: AppBar(title: Text(context.tr('language_settings'))),
       body: Column(
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppTheme.darkGrey,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: TextField(
-                controller: _searchController,
-                style: const TextStyle(color: AppTheme.white),
-                onChanged: (value) =>
-                    setState(() => _query = value.trim().toLowerCase()),
-                decoration: InputDecoration(
-                  hintText: context.tr('search_language'),
-                  hintStyle: const TextStyle(color: AppTheme.grey),
-                  prefixIcon: const Icon(Icons.search, color: AppTheme.grey),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                ),
+            child: TextField(
+              controller: _searchController,
+              style: AppTheme.bodyStyle,
+              onChanged: (value) =>
+                  setState(() => _query = value.trim().toLowerCase()),
+              decoration: InputDecoration(
+                hintText: context.tr('search_language'),
+                prefixIcon: const Icon(Icons.search, color: AppTheme.muted),
               ),
             ),
           ),
@@ -78,12 +58,8 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen> {
               builder: (context, currentLocale, child) {
                 return ListView.separated(
                   itemCount: filtered.length,
-                  separatorBuilder: (context, index) => const Divider(
-                    color: AppTheme.divider,
-                    height: 1,
-                    indent: 16,
-                    endIndent: 16,
-                  ),
+                  separatorBuilder: (context, index) =>
+                      const Divider(indent: 16, endIndent: 16),
                   itemBuilder: (context, index) {
                     final locale = filtered[index];
                     final isSelected =
@@ -97,20 +73,14 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen> {
                       },
                       title: Text(
                         _service.labelFor(locale),
-                        style: const TextStyle(
-                          color: AppTheme.white,
-                          fontSize: 15,
-                        ),
+                        style: AppTheme.bodyStyle,
                       ),
                       subtitle: Text(
                         locale.toLanguageTag(),
-                        style: const TextStyle(
-                          color: AppTheme.grey,
-                          fontSize: 12,
-                        ),
+                        style: AppTheme.captionStyle,
                       ),
                       trailing: isSelected
-                          ? const Icon(Icons.check_circle, color: AppTheme.blue)
+                          ? const Icon(Icons.check, color: AppTheme.accent)
                           : null,
                     );
                   },

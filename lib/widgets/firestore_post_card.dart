@@ -1,11 +1,11 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import '../models/user_model.dart';
 import '../theme/app_theme.dart';
+import 'app_snackbar.dart';
+import 'post_image.dart';
 import '../services/notification_service.dart';
 import '../screens/post/comments_screen.dart';
 import '../screens/profile/profile_screen.dart';
@@ -79,29 +79,6 @@ class _FirestorePostCardState extends State<FirestorePostCard>
     if (mounted) setState(() => _isBookmarked = doc.exists);
   }
 
-  Widget _buildImage(String url) {
-    if (url.startsWith('data:image')) {
-      try {
-        final base64Str = url.split(',').last;
-        final bytes = base64Decode(base64Str);
-        return Image.memory(
-          bytes,
-          fit: BoxFit.cover,
-          width: double.infinity,
-          height: double.infinity,
-        );
-      } catch (_) {
-        return Container(color: AppTheme.darkGrey);
-      }
-    }
-    return CachedNetworkImage(
-      imageUrl: url,
-      fit: BoxFit.cover,
-      placeholder: (_, _) => Container(color: AppTheme.darkGrey),
-      errorWidget: (_, _, _) => Container(color: AppTheme.darkGrey),
-    );
-  }
-
   Future<void> _toggleLike() async {
     final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
     if (uid.isEmpty) return;
@@ -141,15 +118,10 @@ class _FirestorePostCardState extends State<FirestorePostCard>
         _isLiked = wasLiked;
         _likesCount = previousLikesCount;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Like saqlanmadi. Qayta urinib ko\'ring.'),
-          backgroundColor: AppTheme.red,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
+      showAppSnackBar(
+        context,
+        'Like saqlanmadi. Qayta urinib ko\'ring.',
+        isError: true,
       );
     }
   }
@@ -179,22 +151,14 @@ class _FirestorePostCardState extends State<FirestorePostCard>
     } catch (_) {
       if (!mounted) return;
       setState(() => _isBookmarked = wasBookmarked);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Saqlash holati yangilanmadi.'),
-          backgroundColor: AppTheme.red,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
+      showAppSnackBar(context, 'Saqlash holati yangilanmadi.', isError: true);
     }
   }
 
-  void _doubleTapLike() async {
+  Future<void> _doubleTapLike() async {
     if (!_isLiked) await _toggleLike();
-    _showHeart = true;
+    if (!mounted) return;
+    setState(() => _showHeart = true);
     _heartController.forward(from: 0);
     await Future.delayed(const Duration(milliseconds: 900));
     if (mounted) setState(() => _showHeart = false);
@@ -206,7 +170,6 @@ class _FirestorePostCardState extends State<FirestorePostCard>
     final imageUrls = List<String>.from(data['imageUrls'] ?? []);
     final caption = data['caption'] as String? ?? '';
     final username = data['username'] as String? ?? '';
-    final userDisplayName = data['userDisplayName'] as String? ?? '';
     final userPhotoUrl = data['userPhotoUrl'] as String? ?? '';
     final location = data['location'] as String? ?? '';
     final postOwnerId = data['uid'] as String? ?? '';
@@ -219,7 +182,6 @@ class _FirestorePostCardState extends State<FirestorePostCard>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           child: Row(
@@ -228,12 +190,16 @@ class _FirestorePostCardState extends State<FirestorePostCard>
                 onTap: _openAuthorProfile,
                 child: CircleAvatar(
                   radius: 18,
-                  backgroundColor: AppTheme.darkGrey,
+                  backgroundColor: AppTheme.surfaceMuted,
                   backgroundImage: userPhotoUrl.isNotEmpty
                       ? NetworkImage(userPhotoUrl)
                       : null,
                   child: userPhotoUrl.isEmpty
-                      ? const Icon(Icons.person, color: AppTheme.grey, size: 18)
+                      ? const Icon(
+                          Icons.person,
+                          color: AppTheme.muted,
+                          size: 18,
+                        )
                       : null,
                 ),
               ),
@@ -246,46 +212,23 @@ class _FirestorePostCardState extends State<FirestorePostCard>
                       children: [
                         GestureDetector(
                           onTap: _openAuthorProfile,
-                          child: Text(
-                            username,
-                            style: const TextStyle(
-                              color: AppTheme.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13,
-                            ),
-                          ),
+                          child: Text(username, style: AppTheme.labelStyle),
                         ),
-                        const SizedBox(width: 4),
-                        if (userDisplayName.isNotEmpty)
-                          Text(
-                            '• Kuzatilmoqda',
-                            style: const TextStyle(
-                              color: AppTheme.grey,
-                              fontSize: 11,
-                            ),
-                          ),
                       ],
                     ),
                     if (location.isNotEmpty)
-                      Text(
-                        location,
-                        style: const TextStyle(
-                          color: AppTheme.grey,
-                          fontSize: 11,
-                        ),
-                      ),
+                      Text(location, style: AppTheme.captionStyle),
                   ],
                 ),
               ),
               IconButton(
                 onPressed: () => _showMoreOptions(context, isOwner),
-                icon: const Icon(Icons.more_vert, color: AppTheme.white),
+                icon: const Icon(Icons.more_horiz),
               ),
             ],
           ),
         ),
 
-        // Image
         GestureDetector(
           onDoubleTap: _doubleTapLike,
           child: Stack(
@@ -294,8 +237,8 @@ class _FirestorePostCardState extends State<FirestorePostCard>
               AspectRatio(
                 aspectRatio: 1,
                 child: imageUrls.isNotEmpty
-                    ? _buildImage(imageUrls.first)
-                    : Container(color: AppTheme.darkGrey),
+                    ? PostImage(url: imageUrls.first)
+                    : Container(color: AppTheme.surfaceMuted),
               ),
               if (_showHeart)
                 AnimatedBuilder(
@@ -304,7 +247,7 @@ class _FirestorePostCardState extends State<FirestorePostCard>
                     scale: _heartAnimation.value,
                     child: const Icon(
                       Icons.favorite,
-                      color: Colors.white,
+                      color: AppTheme.onAccent,
                       size: 90,
                     ),
                   ),
@@ -313,7 +256,6 @@ class _FirestorePostCardState extends State<FirestorePostCard>
           ),
         ),
 
-        // Actions
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
           child: Row(
@@ -322,78 +264,48 @@ class _FirestorePostCardState extends State<FirestorePostCard>
                 onPressed: _toggleLike,
                 icon: Icon(
                   _isLiked ? Icons.favorite : Icons.favorite_border,
-                  color: _isLiked ? AppTheme.red : AppTheme.white,
-                  size: 26,
+                  color: _isLiked ? AppTheme.accent : AppTheme.ink,
                 ),
               ),
               IconButton(
                 onPressed: () => _openComments(context, '', postOwnerId),
-                icon: const Icon(
-                  Icons.chat_bubble_outline,
-                  color: AppTheme.white,
-                  size: 24,
-                ),
+                icon: const Icon(Icons.chat_bubble_outline),
               ),
               IconButton(
                 onPressed: () {},
-                icon: const Icon(
-                  Icons.send_outlined,
-                  color: AppTheme.white,
-                  size: 24,
-                ),
+                icon: const Icon(Icons.send_outlined),
               ),
               const Spacer(),
               IconButton(
                 onPressed: _toggleBookmark,
                 icon: Icon(
                   _isBookmarked ? Icons.bookmark : Icons.bookmark_border,
-                  color: AppTheme.white,
-                  size: 26,
+                  color: _isBookmarked ? AppTheme.accent : AppTheme.ink,
                 ),
               ),
             ],
           ),
         ),
 
-        // Likes
         if (_likesCount > 0)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(
-              '$_likesCount ta like',
-              style: const TextStyle(
-                color: AppTheme.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 13,
-              ),
-            ),
+            child: Text('$_likesCount ta like', style: AppTheme.labelStyle),
           ),
 
-        // Caption
         if (caption.isNotEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             child: RichText(
               text: TextSpan(
                 children: [
-                  TextSpan(
-                    text: '$username ',
-                    style: const TextStyle(
-                      color: AppTheme.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                    ),
-                  ),
-                  TextSpan(
-                    text: caption,
-                    style: const TextStyle(color: AppTheme.white, fontSize: 13),
-                  ),
+                  TextSpan(text: '$username ', style: AppTheme.labelStyle),
+                  TextSpan(text: caption, style: AppTheme.bodyStyle),
                 ],
               ),
             ),
           ),
 
-        // Izohlar soni
         if (commentsCount > 0)
           GestureDetector(
             onTap: () => _openComments(context, '', postOwnerId),
@@ -401,20 +313,16 @@ class _FirestorePostCardState extends State<FirestorePostCard>
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
               child: Text(
                 '$commentsCount ta izohni ko\'rish',
-                style: const TextStyle(color: AppTheme.grey, fontSize: 13),
+                style: const TextStyle(color: AppTheme.muted, fontSize: 14),
               ),
             ),
           ),
 
-        // Time
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          child: Text(
-            timeago.format(createdAt),
-            style: const TextStyle(color: AppTheme.grey, fontSize: 11),
-          ),
+          child: Text(timeago.format(createdAt), style: AppTheme.captionStyle),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 8),
       ],
     );
   }
@@ -439,10 +347,6 @@ class _FirestorePostCardState extends State<FirestorePostCard>
   void _showMoreOptions(BuildContext context, bool isOwner) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppTheme.darkGrey,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
       builder: (_) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -452,16 +356,19 @@ class _FirestorePostCardState extends State<FirestorePostCard>
               height: 4,
               margin: const EdgeInsets.symmetric(vertical: 8),
               decoration: BoxDecoration(
-                color: AppTheme.grey,
+                color: AppTheme.border,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
             if (isOwner)
               ListTile(
-                leading: const Icon(Icons.delete_outline, color: AppTheme.red),
+                leading: const Icon(
+                  Icons.delete_outline,
+                  color: AppTheme.danger,
+                ),
                 title: const Text(
                   'Postni o\'chirish',
-                  style: TextStyle(color: AppTheme.red),
+                  style: TextStyle(color: AppTheme.danger),
                 ),
                 onTap: () {
                   Navigator.pop(context);
@@ -469,19 +376,13 @@ class _FirestorePostCardState extends State<FirestorePostCard>
                 },
               ),
             ListTile(
-              leading: const Icon(Icons.copy_outlined, color: AppTheme.white),
-              title: const Text(
-                'Havolani nusxalash',
-                style: TextStyle(color: AppTheme.white),
-              ),
+              leading: const Icon(Icons.copy_outlined),
+              title: const Text('Havolani nusxalash'),
               onTap: () => Navigator.pop(context),
             ),
             ListTile(
-              leading: const Icon(Icons.flag_outlined, color: AppTheme.white),
-              title: const Text(
-                'Shikoyat qilish',
-                style: TextStyle(color: AppTheme.white),
-              ),
+              leading: const Icon(Icons.flag_outlined),
+              title: const Text('Shikoyat qilish'),
               onTap: () => Navigator.pop(context),
             ),
           ],
@@ -512,16 +413,7 @@ class _FirestorePostCardState extends State<FirestorePostCard>
       );
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Profilni ochib bo\'lmadi'),
-          backgroundColor: AppTheme.red,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
+      showAppSnackBar(context, 'Profilni ochib bo\'lmadi', isError: true);
     }
   }
 

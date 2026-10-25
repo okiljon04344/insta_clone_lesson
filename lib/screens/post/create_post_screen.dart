@@ -5,10 +5,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/supabase_storage_service.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/app_snackbar.dart';
 
-/// Instagram kabi 2 bosqichli post yaratish:
-/// Step 1 → Rasm tanlash / ko'rish (Keyingi)
-/// Step 2 → Caption, joylashuv, sozlamalar (Ulashish)
+/// Two-step post creation: pick an image, then add caption and location.
 class CreatePostScreen extends StatefulWidget {
   const CreatePostScreen({super.key});
 
@@ -22,7 +21,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   final _captionController = TextEditingController();
   final _locationController = TextEditingController();
   bool _isLoading = false;
-  int _step = 1; // 1 = rasm tanlash, 2 = detallar
+  int _step = 1; // 1 = pick image, 2 = details
   bool _isLoadingGallery = false;
 
   @override
@@ -76,14 +75,14 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   }
 
   Future<void> _publish() async {
-    if (_selectedImage == null || _selectedImageBytes == null) return;
+    final image = _selectedImage;
+    if (image == null || _selectedImageBytes == null) return;
     setState(() => _isLoading = true);
 
     try {
       final user = FirebaseAuth.instance.currentUser!;
       final db = FirebaseFirestore.instance;
 
-      // Foydalanuvchi ma'lumotlarini olish
       final userDoc = await db.collection('users').doc(user.uid).get();
       final userData = userDoc.data()!;
 
@@ -91,10 +90,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       final imageUrl = await SupabaseStorageService().uploadPostImage(
         uid: user.uid,
         postId: postId,
-        image: _selectedImage!,
+        image: image,
       );
 
-      // Firestore ga post yozish
       await db.collection('posts').doc(postId).set({
         'id': postId,
         'uid': user.uid,
@@ -110,67 +108,35 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      // Foydalanuvchining postsCount ni oshirish
       await db.collection('users').doc(user.uid).update({
         'postsCount': FieldValue.increment(1),
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Post muvaffaqiyatli ulashildi!'),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-        );
+        showAppSnackBar(context, 'Post muvaffaqiyatli ulashildi!');
         Navigator.pop(context, true);
       }
     } catch (e) {
-      if (mounted) {
-        _showError('Xatolik: $e');
-      }
+      if (mounted) showAppSnackBar(context, 'Xatolik: $e', isError: true);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppTheme.red,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.black,
       appBar: AppBar(
-        backgroundColor: AppTheme.black,
         leading: _step == 1
             ? IconButton(
                 onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.close, color: AppTheme.white),
+                icon: const Icon(Icons.close),
               )
             : IconButton(
                 onPressed: _isLoading ? null : () => setState(() => _step = 1),
-                icon: const Icon(Icons.arrow_back, color: AppTheme.white),
+                icon: const Icon(Icons.arrow_back),
               ),
-        title: Text(
-          _step == 1 ? 'Yangi post' : 'Post yaratish',
-          style: const TextStyle(
-            color: AppTheme.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 17,
-          ),
-        ),
+        title: Text(_step == 1 ? 'Yangi post' : 'Post yaratish'),
         centerTitle: true,
         actions: [
           if (_step == 1)
@@ -178,14 +144,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               onPressed: _selectedImage == null
                   ? null
                   : () => setState(() => _step = 2),
-              child: const Text(
-                'Keyingi',
-                style: TextStyle(
-                  color: AppTheme.blue,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
+              child: const Text('Keyingi'),
             )
           else
             TextButton(
@@ -194,19 +153,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                   ? const SizedBox(
                       width: 18,
                       height: 18,
-                      child: CircularProgressIndicator(
-                        color: AppTheme.blue,
-                        strokeWidth: 2,
-                      ),
+                      child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text(
-                      'Ulashish',
-                      style: TextStyle(
-                        color: AppTheme.blue,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
+                  : const Text('Ulashish'),
             ),
         ],
       ),
@@ -214,25 +163,21 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     );
   }
 
-  // STEP 1: Rasm tanlash va ko'rish
   Widget _buildStep1() {
     if (_isLoadingGallery) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppTheme.blue),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
+    final bytes = _selectedImageBytes;
     return Column(
       children: [
-        // Rasm ko'rinishi
         Expanded(
           flex: 6,
-          child: _selectedImage != null
+          child: bytes != null
               ? Stack(
                   fit: StackFit.expand,
                   children: [
-                    Image.memory(_selectedImageBytes!, fit: BoxFit.contain),
-                    // Nisbat tugmalari (Instagram kabi)
+                    Image.memory(bytes, fit: BoxFit.contain),
                     Positioned(left: 8, bottom: 8, child: _aspectRatioButton()),
                     Positioned(
                       right: 8,
@@ -242,82 +187,34 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                   ],
                 )
               : Container(
-                  color: AppTheme.darkGrey,
+                  color: AppTheme.surfaceMuted,
                   child: const Center(
                     child: Icon(
                       Icons.photo_library_outlined,
-                      color: AppTheme.grey,
+                      color: AppTheme.muted,
                       size: 48,
                     ),
                   ),
                 ),
         ),
 
-        // Galereya / Kamera tanlash
-        Container(
-          color: AppTheme.black,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        Padding(
+          padding: const EdgeInsets.all(16),
           child: Row(
             children: [
               Expanded(
-                child: GestureDetector(
-                  onTap: _pickFromGallery,
-                  child: Container(
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: AppTheme.darkGrey,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.photo_library_outlined,
-                          color: AppTheme.white,
-                          size: 20,
-                        ),
-                        SizedBox(width: 6),
-                        Text(
-                          'Galereya',
-                          style: TextStyle(
-                            color: AppTheme.white,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                child: OutlinedButton.icon(
+                  onPressed: _pickFromGallery,
+                  icon: const Icon(Icons.photo_library_outlined, size: 20),
+                  label: const Text('Galereya'),
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 12),
               Expanded(
-                child: GestureDetector(
-                  onTap: _pickFromCamera,
-                  child: Container(
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: AppTheme.darkGrey,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.camera_alt_outlined,
-                          color: AppTheme.white,
-                          size: 20,
-                        ),
-                        SizedBox(width: 6),
-                        Text(
-                          'Kamera',
-                          style: TextStyle(
-                            color: AppTheme.white,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                child: OutlinedButton.icon(
+                  onPressed: _pickFromCamera,
+                  icon: const Icon(Icons.camera_alt_outlined, size: 20),
+                  label: const Text('Kamera'),
                 ),
               ),
             ],
@@ -327,12 +224,11 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     );
   }
 
-  // STEP 2: Caption va detallar
   Widget _buildStep2() {
+    final bytes = _selectedImageBytes;
     return SingleChildScrollView(
       child: Column(
         children: [
-          // Caption qatori
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
@@ -343,83 +239,74 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 Expanded(
                   child: TextField(
                     controller: _captionController,
-                    style: const TextStyle(color: AppTheme.white, fontSize: 14),
+                    style: AppTheme.bodyStyle,
                     maxLines: 6,
                     minLines: 1,
                     maxLength: 2200,
                     autofocus: true,
                     decoration: const InputDecoration(
                       hintText: 'Caption yozing...',
-                      hintStyle: TextStyle(color: AppTheme.grey),
+                      filled: false,
                       border: InputBorder.none,
-                      counterStyle: TextStyle(
-                        color: AppTheme.grey,
-                        fontSize: 11,
-                      ),
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      counterStyle: AppTheme.captionStyle,
                     ),
                   ),
                 ),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: Image.memory(
-                    _selectedImageBytes!,
-                    width: 52,
-                    height: 52,
-                    fit: BoxFit.cover,
+                if (bytes != null)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: Image.memory(
+                      bytes,
+                      width: 52,
+                      height: 52,
+                      fit: BoxFit.cover,
+                    ),
                   ),
-                ),
               ],
             ),
           ),
 
-          const Divider(color: AppTheme.divider, height: 1),
+          const Divider(),
 
-          // Joylashuv
           ListTile(
-            leading: const Icon(
-              Icons.location_on_outlined,
-              color: AppTheme.white,
-            ),
+            leading: const Icon(Icons.location_on_outlined),
             title: TextField(
               controller: _locationController,
-              style: const TextStyle(color: AppTheme.white, fontSize: 14),
+              style: AppTheme.bodyStyle,
               decoration: const InputDecoration(
                 hintText: 'Joylashuvni qo\'shing',
-                hintStyle: TextStyle(color: AppTheme.grey),
+                filled: false,
                 border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
               ),
             ),
           ),
 
-          const Divider(color: AppTheme.divider, height: 1),
+          const Divider(),
 
-          // Odamlarni belgilash
           _optionTile(Icons.person_outline_rounded, 'Odamlarni belgilash'),
-          const Divider(color: AppTheme.divider, height: 1),
+          const Divider(),
 
-          // Musiqa
           _optionTile(Icons.music_note_outlined, 'Musiqa qo\'shish'),
-          const Divider(color: AppTheme.divider, height: 1),
+          const Divider(),
 
-          // Ko'rish sozlamalari
           _optionTile(Icons.lock_outline, 'Ko\'rish sozlamalari'),
-          const Divider(color: AppTheme.divider, height: 1),
+          const Divider(),
 
-          // Ilg'or sozlamalar
           ListTile(
-            leading: const Icon(Icons.settings_outlined, color: AppTheme.white),
-            title: const Text(
-              'Kengaytirilgan sozlamalar',
-              style: TextStyle(color: AppTheme.white, fontSize: 14),
-            ),
+            leading: const Icon(Icons.settings_outlined),
+            title: const Text('Kengaytirilgan sozlamalar'),
             trailing: const Icon(
               Icons.arrow_forward_ios,
-              color: AppTheme.grey,
+              color: AppTheme.muted,
               size: 14,
             ),
             onTap: () {},
           ),
-          const Divider(color: AppTheme.divider, height: 1),
+          const Divider(),
           const SizedBox(height: 24),
         ],
       ),
@@ -430,15 +317,18 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.6),
+        color: AppTheme.ink.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(20),
       ),
       child: const Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.crop, color: Colors.white, size: 16),
+          Icon(Icons.crop, color: AppTheme.onAccent, size: 16),
           SizedBox(width: 4),
-          Text('Nisbat', style: TextStyle(color: Colors.white, fontSize: 12)),
+          Text(
+            'Nisbat',
+            style: TextStyle(color: AppTheme.onAccent, fontSize: 12),
+          ),
         ],
       ),
     );
@@ -453,17 +343,21 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.6),
+              color: AppTheme.ink.withValues(alpha: 0.6),
               borderRadius: BorderRadius.circular(20),
             ),
             child: const Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.collections_outlined, color: Colors.white, size: 16),
+                Icon(
+                  Icons.collections_outlined,
+                  color: AppTheme.onAccent,
+                  size: 16,
+                ),
                 SizedBox(width: 4),
                 Text(
                   'Galereya',
-                  style: TextStyle(color: Colors.white, fontSize: 12),
+                  style: TextStyle(color: AppTheme.onAccent, fontSize: 12),
                 ),
               ],
             ),
@@ -475,12 +369,12 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.6),
+              color: AppTheme.ink.withValues(alpha: 0.6),
               borderRadius: BorderRadius.circular(20),
             ),
             child: const Icon(
               Icons.camera_alt_outlined,
-              color: Colors.white,
+              color: AppTheme.onAccent,
               size: 16,
             ),
           ),
@@ -490,29 +384,24 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   }
 
   Widget _userAvatar() {
-    final user = FirebaseAuth.instance.currentUser;
+    final photoUrl = FirebaseAuth.instance.currentUser?.photoURL ?? '';
     return CircleAvatar(
       radius: 18,
-      backgroundColor: AppTheme.darkGrey,
-      backgroundImage: (user?.photoURL?.isNotEmpty == true)
-          ? NetworkImage(user!.photoURL!)
-          : null,
-      child: (user?.photoURL?.isNotEmpty != true)
-          ? const Icon(Icons.person, color: AppTheme.grey, size: 18)
+      backgroundColor: AppTheme.surfaceMuted,
+      backgroundImage: photoUrl.isNotEmpty ? NetworkImage(photoUrl) : null,
+      child: photoUrl.isEmpty
+          ? const Icon(Icons.person, color: AppTheme.muted, size: 18)
           : null,
     );
   }
 
   Widget _optionTile(IconData icon, String label) {
     return ListTile(
-      leading: Icon(icon, color: AppTheme.white),
-      title: Text(
-        label,
-        style: const TextStyle(color: AppTheme.white, fontSize: 14),
-      ),
+      leading: Icon(icon),
+      title: Text(label),
       trailing: const Icon(
         Icons.arrow_forward_ios,
-        color: AppTheme.grey,
+        color: AppTheme.muted,
         size: 14,
       ),
       onTap: () {},

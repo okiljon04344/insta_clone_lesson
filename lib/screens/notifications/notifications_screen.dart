@@ -1,12 +1,12 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../../services/notification_service.dart';
 import '../../models/user_model.dart';
 import '../../l10n/app_strings.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/follow_chip.dart';
+import '../../widgets/post_image.dart';
 import '../profile/profile_screen.dart';
 
 class NotificationsScreen extends StatefulWidget {
@@ -20,32 +20,18 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   @override
   void initState() {
     super.initState();
-    // Ekran ochilib ko'rildi — hammasi o'qildi
     NotificationService().markAllRead();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.black,
-      appBar: AppBar(
-        backgroundColor: AppTheme.black,
-        title: Text(
-          context.tr('notifications_title'),
-          style: const TextStyle(
-            color: AppTheme.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
-        ),
-      ),
+      appBar: AppBar(title: Text(context.tr('notifications_title'))),
       body: StreamBuilder<List<AppNotification>>(
         stream: NotificationService().notificationsStream(),
         builder: (context, snap) {
           if (snap.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(color: AppTheme.blue),
-            );
+            return const Center(child: CircularProgressIndicator());
           }
 
           final notifications = snap.data ?? [];
@@ -57,30 +43,25 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 children: [
                   const Icon(
                     Icons.notifications_none,
-                    color: AppTheme.grey,
-                    size: 64,
+                    color: AppTheme.muted,
+                    size: 48,
                   ),
                   const SizedBox(height: 16),
                   Text(
                     context.tr('notifications_empty_title'),
-                    style: const TextStyle(
-                      color: AppTheme.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: AppTheme.titleStyle,
                   ),
                   const SizedBox(height: 8),
                   Text(
                     context.tr('notifications_empty_subtitle'),
                     textAlign: TextAlign.center,
-                    style: const TextStyle(color: AppTheme.grey, fontSize: 14),
+                    style: const TextStyle(color: AppTheme.muted, fontSize: 14),
                   ),
                 ],
               ),
             );
           }
 
-          // Guruhlashtirish: Bugun / Bu hafta / Kechagi
           return ListView.builder(
             itemCount: notifications.length,
             itemBuilder: (context, i) {
@@ -105,7 +86,7 @@ class _NotificationTile extends StatelessWidget {
 
     return Container(
       color: isUnread
-          ? AppTheme.blue.withValues(alpha: 0.08)
+          ? AppTheme.accent.withValues(alpha: 0.06)
           : Colors.transparent,
       child: ListTile(
         onTap: () => _openNotifierProfile(context),
@@ -115,12 +96,12 @@ class _NotificationTile extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 26,
-              backgroundColor: AppTheme.darkGrey,
+              backgroundColor: AppTheme.surfaceMuted,
               backgroundImage: notification.fromPhotoUrl.isNotEmpty
                   ? NetworkImage(notification.fromPhotoUrl)
                   : null,
               child: notification.fromPhotoUrl.isEmpty
-                  ? const Icon(Icons.person, color: AppTheme.grey)
+                  ? const Icon(Icons.person, color: AppTheme.muted)
                   : null,
             ),
             Positioned(
@@ -132,9 +113,9 @@ class _NotificationTile extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: _iconColor,
                   shape: BoxShape.circle,
-                  border: Border.all(color: AppTheme.black, width: 2),
+                  border: Border.all(color: AppTheme.background, width: 2),
                 ),
-                child: Icon(_iconData, color: Colors.white, size: 11),
+                child: Icon(_iconData, color: AppTheme.onAccent, size: 11),
               ),
             ),
           ],
@@ -144,22 +125,15 @@ class _NotificationTile extends StatelessWidget {
             children: [
               TextSpan(
                 text: notification.fromUsername,
-                style: const TextStyle(
-                  color: AppTheme.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                ),
+                style: AppTheme.labelStyle,
               ),
               const TextSpan(text: ' '),
-              TextSpan(
-                text: _actionText(context),
-                style: const TextStyle(color: AppTheme.white, fontSize: 13),
-              ),
+              TextSpan(text: _actionText(context), style: AppTheme.bodyStyle),
               if (notification.text != null) ...[
                 const TextSpan(text: ': '),
                 TextSpan(
                   text: '"${notification.text}"',
-                  style: const TextStyle(color: AppTheme.grey, fontSize: 13),
+                  style: const TextStyle(color: AppTheme.muted, fontSize: 14),
                 ),
               ],
             ],
@@ -169,13 +143,17 @@ class _NotificationTile extends StatelessWidget {
           padding: const EdgeInsets.only(top: 2),
           child: Text(
             _formatTime(notification.createdAt),
-            style: const TextStyle(color: AppTheme.grey, fontSize: 11),
+            style: AppTheme.captionStyle,
           ),
         ),
         trailing: notification.postImageUrl?.isNotEmpty == true
             ? ClipRRect(
                 borderRadius: BorderRadius.circular(4),
-                child: _buildPostImage(notification.postImageUrl!),
+                child: SizedBox(
+                  width: 44,
+                  height: 44,
+                  child: PostImage(url: notification.postImageUrl!),
+                ),
               )
             : notification.type == NotificationType.follow
             ? _FollowBackButton(uid: notification.fromUid)
@@ -243,45 +221,9 @@ class _NotificationTile extends StatelessWidget {
     }
   }
 
-  Color get _iconColor {
-    switch (notification.type) {
-      case NotificationType.like:
-        return AppTheme.red;
-      case NotificationType.comment:
-        return AppTheme.blue;
-      case NotificationType.follow:
-        return Colors.purple;
-      case NotificationType.mention:
-        return Colors.orange;
-      case NotificationType.message:
-        return Colors.green;
-      case NotificationType.call:
-        return AppTheme.blue;
-      case NotificationType.missedCall:
-        return AppTheme.red;
-    }
-  }
-
-  Widget _buildPostImage(String url) {
-    if (url.startsWith('data:image')) {
-      try {
-        final bytes = base64Decode(url.split(',').last);
-        return Image.memory(bytes, width: 44, height: 44, fit: BoxFit.cover);
-      } catch (_) {
-        return Container(color: AppTheme.darkGrey, width: 44, height: 44);
-      }
-    }
-    return CachedNetworkImage(
-      imageUrl: url,
-      width: 44,
-      height: 44,
-      fit: BoxFit.cover,
-      placeholder: (_, _) =>
-          Container(color: AppTheme.darkGrey, width: 44, height: 44),
-      errorWidget: (_, _, _) =>
-          Container(color: AppTheme.darkGrey, width: 44, height: 44),
-    );
-  }
+  Color get _iconColor => notification.type == NotificationType.missedCall
+      ? AppTheme.danger
+      : AppTheme.accent;
 
   String _formatTime(DateTime dt) {
     final diff = DateTime.now().difference(dt);
@@ -330,35 +272,13 @@ class _FollowBackButtonState extends State<_FollowBackButton> {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: _loading ? null : _toggle,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-        decoration: BoxDecoration(
-          color: _isFollowing ? AppTheme.darkGrey : AppTheme.blue,
-          borderRadius: BorderRadius.circular(8),
-          border: _isFollowing ? Border.all(color: AppTheme.divider) : null,
-        ),
-        child: _loading
-            ? const SizedBox(
-                width: 14,
-                height: 14,
-                child: CircularProgressIndicator(
-                  color: AppTheme.white,
-                  strokeWidth: 2,
-                ),
-              )
-            : Text(
-                _isFollowing
-                    ? context.tr('following_state')
-                    : context.tr('follow_back'),
-                style: const TextStyle(
-                  color: AppTheme.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-      ),
+    return FollowChip(
+      label: _isFollowing
+          ? context.tr('following_state')
+          : context.tr('follow_back'),
+      isActive: _isFollowing,
+      isLoading: _loading,
+      onTap: _toggle,
     );
   }
 

@@ -4,13 +4,14 @@ import '../../l10n/app_strings.dart';
 import '../../models/user_model.dart';
 import '../../services/call_service.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/user_avatar.dart';
 
 class CallScreen extends StatefulWidget {
   final UserModel otherUser;
   final bool isVideo;
   final bool isOutgoing;
 
-  /// Kiruvchi qo'ng'iroq uchun callId (isOutgoing=false bo'lganda kerak)
+  /// Required for incoming calls (`isOutgoing == false`).
   final String? callId;
 
   const CallScreen({
@@ -79,7 +80,7 @@ class _CallScreenState extends State<CallScreen>
 
       _listenToCallStatus(id);
 
-      // 30 soniya javob yo'q = missed
+      // No answer within 30 seconds counts as missed.
       _timeoutTimer = Timer(const Duration(seconds: 30), () {
         if (mounted && !_isConnected && _callId != null) {
           _callService.markMissedIfOld(_callId!);
@@ -159,180 +160,112 @@ class _CallScreenState extends State<CallScreen>
 
   @override
   Widget build(BuildContext context) {
+    final showSelfPreview = widget.isVideo && !_isCameraOff;
     return Scaffold(
-      backgroundColor: const Color(0xFF1A1A2E),
-      body: Stack(
-        children: [
-          // Fon (video qo'ng'iroqda kamera ko'rinishi bo'ladi)
-          if (widget.isVideo && !_isCameraOff)
-            Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFF16213E),
-                    Color(0xFF0F3460),
-                    Color(0xFF533483),
-                  ],
-                ),
-              ),
-            )
-          else
-            Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Color(0xFF1A1A2E), Color(0xFF0D0D1A)],
-                ),
-              ),
-            ),
-
-          SafeArea(
-            child: Column(
+      body: SafeArea(
+        child: Stack(
+          children: [
+            Column(
               children: [
-                // Yuqori qism
                 Padding(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 8,
+                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       IconButton(
-                        icon: const Icon(
-                          Icons.arrow_back_ios,
-                          color: Colors.white70,
-                        ),
+                        icon: const Icon(Icons.arrow_back_ios_new, size: 20),
                         onPressed: _endCall,
                       ),
                       Text(
                         widget.isVideo
                             ? context.tr('video_call')
                             : context.tr('voice_call'),
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 14,
-                        ),
+                        style: AppTheme.captionStyle,
                       ),
                       const SizedBox(width: 48),
                     ],
                   ),
                 ),
-
                 const Spacer(flex: 2),
-
-                // Foydalanuvchi avatari
                 ScaleTransition(
                   scale: !_isConnected
                       ? _pulseAnimation
                       : const AlwaysStoppedAnimation(1.0),
                   child: Container(
-                    width: 130,
-                    height: 130,
+                    padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: _isConnected
-                            ? Colors.greenAccent.withValues(alpha: 0.6)
-                            : Colors.white.withValues(alpha: 0.3),
-                        width: 3,
+                        color: _isConnected ? AppTheme.accent : AppTheme.border,
+                        width: 2,
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: (_isConnected ? Colors.green : AppTheme.blue)
-                              .withValues(alpha: 0.4),
-                          blurRadius: 30,
-                          spreadRadius: 5,
-                        ),
-                      ],
                     ),
-                    child: CircleAvatar(
+                    child: UserAvatar(
+                      photoUrl: widget.otherUser.photoUrl,
                       radius: 60,
-                      backgroundColor: AppTheme.darkGrey,
-                      backgroundImage: widget.otherUser.photoUrl.isNotEmpty
-                          ? NetworkImage(widget.otherUser.photoUrl)
-                          : null,
-                      child: widget.otherUser.photoUrl.isEmpty
-                          ? const Icon(
-                              Icons.person,
-                              color: AppTheme.grey,
-                              size: 60,
-                            )
-                          : null,
                     ),
                   ),
                 ),
-
-                const SizedBox(height: 20),
-
-                // Foydalanuvchi ismi
+                const SizedBox(height: 24),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
                       widget.otherUser.displayName,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: AppTheme.headlineStyle,
                     ),
                     if (widget.otherUser.isVerified) ...[
                       const SizedBox(width: 6),
                       const Icon(
                         Icons.verified,
-                        color: AppTheme.blue,
+                        color: AppTheme.accent,
                         size: 20,
                       ),
                     ],
                   ],
                 ),
-
                 const SizedBox(height: 8),
-
                 Text(
                   _statusText(context),
                   style: TextStyle(
-                    color: _isConnected ? Colors.greenAccent : Colors.amber,
+                    color: _isConnected ? AppTheme.accent : AppTheme.muted,
                     fontSize: 14,
                   ),
                 ),
-
                 const Spacer(flex: 3),
-
                 if (!widget.isOutgoing && !_isConnected)
                   _buildIncomingCallButtons()
                 else
                   _buildCallControls(),
-
                 const SizedBox(height: 48),
               ],
             ),
-          ),
-
-          // O'z kamera ko'rinishi (video bo'lsa)
-          if (widget.isVideo && !_isCameraOff)
-            Positioned(
-              top: 100,
-              right: 20,
-              child: Container(
-                width: 90,
-                height: 130,
-                decoration: BoxDecoration(
-                  color: AppTheme.darkGrey,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.white30),
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.camera_alt_outlined,
-                    color: AppTheme.grey,
-                    size: 32,
+            if (showSelfPreview)
+              Positioned(
+                top: 64,
+                right: 20,
+                child: Container(
+                  width: 90,
+                  height: 130,
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceMuted,
+                    borderRadius: BorderRadius.circular(AppTheme.radius),
+                    border: Border.all(color: AppTheme.border),
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.camera_alt_outlined,
+                      color: AppTheme.muted,
+                      size: 32,
+                    ),
                   ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -354,7 +287,7 @@ class _CallScreenState extends State<CallScreen>
                 onTap: () => setState(() => _isCameraOff = !_isCameraOff),
                 isActive: !_isCameraOff,
               ),
-              const SizedBox(width: 20),
+              const SizedBox(width: 24),
               _ControlButton(
                 icon: Icons.switch_camera_outlined,
                 label: context.tr('switch_camera'),
@@ -362,7 +295,7 @@ class _CallScreenState extends State<CallScreen>
               ),
             ],
           ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 24),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -372,27 +305,13 @@ class _CallScreenState extends State<CallScreen>
               onTap: () => setState(() => _isMuted = !_isMuted),
               isActive: !_isMuted,
             ),
-            const SizedBox(width: 20),
-
-            // Tugatish tugmasi
-            GestureDetector(
+            const SizedBox(width: 24),
+            _RoundAction(
+              icon: Icons.call_end,
+              color: AppTheme.danger,
               onTap: _endCall,
-              child: Container(
-                width: 68,
-                height: 68,
-                decoration: const BoxDecoration(
-                  color: Colors.red,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.call_end,
-                  color: Colors.white,
-                  size: 32,
-                ),
-              ),
             ),
-
-            const SizedBox(width: 20),
+            const SizedBox(width: 24),
             _ControlButton(
               icon: _isSpeaker ? Icons.volume_up : Icons.volume_off,
               label: _isSpeaker
@@ -411,60 +330,56 @@ class _CallScreenState extends State<CallScreen>
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // Rad etish
         Column(
           children: [
-            GestureDetector(
+            _RoundAction(
+              icon: Icons.call_end,
+              color: AppTheme.danger,
               onTap: _declineCall,
-              child: Container(
-                width: 68,
-                height: 68,
-                decoration: const BoxDecoration(
-                  color: Colors.red,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.call_end,
-                  color: Colors.white,
-                  size: 32,
-                ),
-              ),
             ),
             const SizedBox(height: 8),
-            Text(
-              context.tr('decline'),
-              style: const TextStyle(color: Colors.white70, fontSize: 12),
-            ),
+            Text(context.tr('decline'), style: AppTheme.captionStyle),
           ],
         ),
         const SizedBox(width: 72),
-        // Qabul qilish
         Column(
           children: [
-            GestureDetector(
+            _RoundAction(
+              icon: widget.isVideo ? Icons.videocam : Icons.call,
+              color: AppTheme.accent,
               onTap: _acceptCall,
-              child: Container(
-                width: 68,
-                height: 68,
-                decoration: const BoxDecoration(
-                  color: Colors.green,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  widget.isVideo ? Icons.videocam : Icons.call,
-                  color: Colors.white,
-                  size: 32,
-                ),
-              ),
             ),
             const SizedBox(height: 8),
-            Text(
-              context.tr('accept'),
-              style: const TextStyle(color: Colors.white70, fontSize: 12),
-            ),
+            Text(context.tr('accept'), style: AppTheme.captionStyle),
           ],
         ),
       ],
+    );
+  }
+}
+
+/// Large filled circle button used for accept / decline / hang up.
+class _RoundAction extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _RoundAction({
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 68,
+        height: 68,
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        child: Icon(icon, color: AppTheme.onAccent, size: 30),
+      ),
     );
   }
 }
@@ -484,6 +399,7 @@ class _ControlButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final color = isActive ? AppTheme.ink : AppTheme.muted;
     return GestureDetector(
       onTap: onTap,
       child: Column(
@@ -492,28 +408,14 @@ class _ControlButton extends StatelessWidget {
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: isActive
-                  ? Colors.white.withValues(alpha: 0.15)
-                  : Colors.white.withValues(alpha: 0.05),
+              color: isActive ? AppTheme.surfaceMuted : AppTheme.background,
               shape: BoxShape.circle,
-              border: Border.all(
-                color: isActive ? Colors.white30 : Colors.white12,
-              ),
+              border: Border.all(color: AppTheme.border),
             ),
-            child: Icon(
-              icon,
-              color: isActive ? Colors.white : Colors.white38,
-              size: 24,
-            ),
+            child: Icon(icon, color: color, size: 24),
           ),
           const SizedBox(height: 6),
-          Text(
-            label,
-            style: TextStyle(
-              color: isActive ? Colors.white70 : Colors.white38,
-              fontSize: 11,
-            ),
-          ),
+          Text(label, style: TextStyle(color: color, fontSize: 12)),
         ],
       ),
     );

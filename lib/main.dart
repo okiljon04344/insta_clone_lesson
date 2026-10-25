@@ -26,14 +26,14 @@ void main() async {
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
+      statusBarIconBrightness: Brightness.dark,
     ),
   );
-  runApp(const InstagramApp());
+  runApp(const FrameApp());
 }
 
-class InstagramApp extends StatelessWidget {
-  const InstagramApp({super.key});
+class FrameApp extends StatelessWidget {
+  const FrameApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -47,9 +47,9 @@ class InstagramApp extends StatelessWidget {
           valueListenable: translationService.revisionNotifier,
           builder: (context, revision, child) {
             return MaterialApp(
-              title: 'Instagram',
+              title: AppTheme.appName,
               debugShowCheckedModeBanner: false,
-              theme: AppTheme.darkTheme,
+              theme: AppTheme.lightTheme,
               locale: locale,
               supportedLocales: AppLanguageService.supportedLocales,
               localizationsDelegates: const [

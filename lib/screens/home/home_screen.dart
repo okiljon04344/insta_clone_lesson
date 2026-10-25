@@ -20,25 +20,9 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.black,
       appBar: AppBar(
-        backgroundColor: AppTheme.black,
-        elevation: 0,
-        title: ShaderMask(
-          shaderCallback: (bounds) =>
-              AppTheme.logoGradient.createShader(bounds),
-          child: const Text(
-            'Instagram',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-              fontStyle: FontStyle.italic,
-            ),
-          ),
-        ),
+        title: const Text(AppTheme.appName, style: AppTheme.wordmarkStyle),
         actions: [
-          // Bildirishnomalar (badge bilan)
           StreamBuilder<int>(
             stream: NotificationService().unreadCountStream(),
             builder: (context, snap) {
@@ -55,7 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     icon: Icon(
                       count > 0 ? Icons.favorite : Icons.favorite_border,
-                      color: AppTheme.white,
+                      color: count > 0 ? AppTheme.accent : AppTheme.ink,
                       size: 26,
                     ),
                   ),
@@ -67,14 +51,14 @@ class _HomeScreenState extends State<HomeScreen> {
                         width: 16,
                         height: 16,
                         decoration: const BoxDecoration(
-                          color: AppTheme.red,
+                          color: AppTheme.danger,
                           shape: BoxShape.circle,
                         ),
                         child: Center(
                           child: Text(
                             count > 9 ? '9+' : '$count',
                             style: const TextStyle(
-                              color: Colors.white,
+                              color: AppTheme.onAccent,
                               fontSize: 9,
                               fontWeight: FontWeight.bold,
                             ),
@@ -93,7 +77,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             icon: const Icon(
               Icons.send_outlined,
-              color: AppTheme.white,
+              color: AppTheme.ink,
               size: 26,
             ),
           ),
@@ -101,11 +85,9 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: RefreshIndicator(
         onRefresh: () async {},
-        color: AppTheme.blue,
-        backgroundColor: AppTheme.black,
         child: CustomScrollView(
           slivers: [
-            // Stories (hozircha mock)
+            // Stories are still sample data.
             SliverToBoxAdapter(
               child: Column(
                 children: [
@@ -123,11 +105,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           StoryWidget(story: sampleStories[i]),
                     ),
                   ),
-                  const Divider(color: AppTheme.divider, height: 1),
+                  const Divider(),
                 ],
               ),
             ),
-            // Real Firestore postlar
             StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
                   .collection('posts')
@@ -139,9 +120,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   return const SliverToBoxAdapter(
                     child: Padding(
                       padding: EdgeInsets.all(32),
-                      child: Center(
-                        child: CircularProgressIndicator(color: AppTheme.blue),
-                      ),
+                      child: Center(child: CircularProgressIndicator()),
                     ),
                   );
                 }
@@ -155,24 +134,21 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Column(
                         children: [
                           const Icon(
-                            Icons.camera_alt_outlined,
-                            color: AppTheme.grey,
-                            size: 64,
+                            Icons.photo_camera_outlined,
+                            color: AppTheme.muted,
+                            size: 48,
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 16),
                           Text(
                             context.tr('home_no_posts_title'),
-                            style: const TextStyle(
-                              color: AppTheme.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: AppTheme.titleStyle,
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 8),
                           Text(
                             context.tr('home_no_posts_subtitle'),
+                            textAlign: TextAlign.center,
                             style: const TextStyle(
-                              color: AppTheme.grey,
+                              color: AppTheme.muted,
                               fontSize: 14,
                             ),
                           ),
@@ -189,7 +165,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     return Column(
                       children: [
                         FirestorePostCard(postId: doc.id, data: data),
-                        const Divider(color: AppTheme.divider, height: 1),
+                        const Divider(),
                       ],
                     );
                   }, childCount: docs.length),

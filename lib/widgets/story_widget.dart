@@ -20,50 +20,37 @@ class StoryWidget extends StatelessWidget {
             Stack(
               alignment: Alignment.center,
               children: [
-                // Gradient ring
-                if (!story.isSeen && !story.isOwn)
-                  Container(
-                    width: 66,
-                    height: 66,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: AppTheme.storyGradient,
-                    ),
-                  )
-                else
-                  Container(
-                    width: 66,
-                    height: 66,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: story.isSeen
-                            ? AppTheme.grey.withValues(alpha: 0.4)
-                            : AppTheme.divider,
-                        width: 2,
-                      ),
+                Container(
+                  width: 66,
+                  height: 66,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: !story.isSeen && !story.isOwn
+                          ? AppTheme.accent
+                          : AppTheme.border,
+                      width: 2,
                     ),
                   ),
-                // Avatar
+                ),
                 Container(
                   width: 60,
                   height: 60,
                   decoration: const BoxDecoration(
                     shape: BoxShape.circle,
-                    color: AppTheme.darkGrey,
+                    color: AppTheme.surfaceMuted,
                   ),
                   child: ClipOval(
                     child: CachedNetworkImage(
                       imageUrl: story.user.avatarUrl,
                       fit: BoxFit.cover,
                       placeholder: (_, _) =>
-                          Container(color: AppTheme.darkGrey),
+                          Container(color: AppTheme.surfaceMuted),
                       errorWidget: (_, _, _) =>
-                          const Icon(Icons.person, color: AppTheme.grey),
+                          const Icon(Icons.person, color: AppTheme.muted),
                     ),
                   ),
                 ),
-                // Add icon for own story
                 if (story.isOwn)
                   Positioned(
                     bottom: 0,
@@ -72,12 +59,12 @@ class StoryWidget extends StatelessWidget {
                       width: 20,
                       height: 20,
                       decoration: const BoxDecoration(
-                        color: AppTheme.blue,
+                        color: AppTheme.accent,
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
                         Icons.add,
-                        color: Colors.white,
+                        color: AppTheme.onAccent,
                         size: 14,
                       ),
                     ),
@@ -89,7 +76,7 @@ class StoryWidget extends StatelessWidget {
               story.isOwn ? 'Sizning story' : story.user.username,
               style: TextStyle(
                 fontSize: 11,
-                color: story.isSeen ? AppTheme.grey : AppTheme.white,
+                color: story.isSeen ? AppTheme.muted : AppTheme.ink,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
