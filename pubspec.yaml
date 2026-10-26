@@ -1,5 +1,5 @@
 name: instagram_clone
-description: "A new Flutter project."
+description: "Instagram-style social app built with Flutter, Firebase and Supabase as a learning project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
