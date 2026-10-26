@@ -44,11 +44,11 @@ class _CommentsScreenState extends State<CommentsScreen> {
       final user = FirebaseAuth.instance.currentUser!;
       final db = FirebaseFirestore.instance;
 
-      // Foydalanuvchi ma'lumotlari
+      // User data
       final userDoc = await db.collection('users').doc(user.uid).get();
       final userData = userDoc.data() ?? {};
 
-      // Izoh qo'shish
+      // Add the comment
       final commentRef = db
           .collection('posts')
           .doc(widget.postId)
@@ -65,12 +65,12 @@ class _CommentsScreenState extends State<CommentsScreen> {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      // commentsCount oshirish
+      // Increment commentsCount
       await db.collection('posts').doc(widget.postId).update({
         'commentsCount': FieldValue.increment(1),
       });
 
-      // Bildirishnoma yuborish (o'ziga emas)
+      // Send a notification (not to yourself)
       if (widget.postOwnerId != user.uid) {
         await NotificationService().sendCommentNotification(
           toUid: widget.postOwnerId,
@@ -108,7 +108,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
       ),
       body: Column(
         children: [
-          // Izohlar ro'yxati
+          // Comments list
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
@@ -176,7 +176,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
             ),
           ),
 
-          // Izoh yozish
+          // Comment input
           Container(
             decoration: const BoxDecoration(
               color: AppTheme.black,

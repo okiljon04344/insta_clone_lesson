@@ -63,7 +63,7 @@ class NotificationService {
   final _db = FirebaseFirestore.instance;
   String get _myUid => FirebaseAuth.instance.currentUser!.uid;
 
-  // Bildirishnoma yuborish
+  // Send a notification
   Future<void> _send({
     required String toUid,
     required NotificationType type,
@@ -71,7 +71,7 @@ class NotificationService {
     String? postImageUrl,
     String? text,
   }) async {
-    if (toUid == _myUid) return; // O'ziga yuborma
+    if (toUid == _myUid) return; // Never notify yourself
 
     final user = FirebaseAuth.instance.currentUser!;
     final userDoc = await _db.collection('users').doc(_myUid).get();
@@ -171,7 +171,7 @@ class NotificationService {
         );
   }
 
-  // O'qilmagan bildirishnomalar soni
+  // Number of unread notifications
   Stream<int> unreadCountStream() {
     return _db
         .collection('notifications')
@@ -182,7 +182,7 @@ class NotificationService {
         .map((q) => q.docs.length);
   }
 
-  // Hammasi o'qildi
+  // Mark all as read
   Future<void> markAllRead() async {
     final batch = _db.batch();
     final snap = await _db

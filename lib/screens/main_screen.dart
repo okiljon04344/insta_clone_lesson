@@ -46,7 +46,7 @@ class _MainScreenState extends State<MainScreen> {
     return StreamBuilder<CallInfo?>(
       stream: CallService().incomingCallStream(),
       builder: (context, callSnap) {
-        // Kiruvchi qo'ng'iroq keldi
+        // Incoming call received
         final incomingCall = callSnap.data;
         if (incomingCall != null) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -79,7 +79,7 @@ class _MainScreenState extends State<MainScreen> {
   String? _lastHandledCallId;
 
   void _handleIncomingCall(CallInfo call) {
-    // Bir xil callId ni qayta-qayta ochmaslik
+    // Do not open the same callId repeatedly
     if (_lastHandledCallId == call.id) return;
     _lastHandledCallId = call.id;
 
@@ -112,7 +112,7 @@ class _MainScreenState extends State<MainScreen> {
             ),
           ),
         ).then((_) {
-          // Ekran yopilganda lastHandledCallId ni tozalash
+          // Clear lastHandledCallId when the screen closes
           _lastHandledCallId = null;
         });
       },

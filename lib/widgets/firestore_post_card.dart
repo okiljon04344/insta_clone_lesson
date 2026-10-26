@@ -393,7 +393,7 @@ class _FirestorePostCardState extends State<FirestorePostCard>
             ),
           ),
 
-        // Izohlar soni
+        // Comment count
         if (commentsCount > 0)
           GestureDetector(
             onTap: () => _openComments(context, '', postOwnerId),

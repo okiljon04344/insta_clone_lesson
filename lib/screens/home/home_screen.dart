@@ -38,7 +38,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         actions: [
-          // Bildirishnomalar (badge bilan)
+          // Notifications (with badge)
           StreamBuilder<int>(
             stream: NotificationService().unreadCountStream(),
             builder: (context, snap) {
@@ -105,7 +105,7 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: AppTheme.black,
         child: CustomScrollView(
           slivers: [
-            // Stories (hozircha mock)
+            // Stories (mock data for now)
             SliverToBoxAdapter(
               child: Column(
                 children: [
@@ -127,7 +127,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ),
-            // Real Firestore postlar
+            // Real Firestore posts
             StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
                   .collection('posts')

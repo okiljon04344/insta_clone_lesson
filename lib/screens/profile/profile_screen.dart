@@ -134,7 +134,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                             ),
                           ),
                           const SizedBox(width: 24),
-                          // Stats — real-time Firestore dan
+                          // Stats: real-time from Firestore
                           Expanded(
                             child: StreamBuilder<DocumentSnapshot>(
                               stream: FirebaseFirestore.instance
@@ -218,7 +218,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                               ),
                                             ),
                                           );
-                                      // Agar profil yangilangan bo'lsa, MainScreen ni qayta yuklash
+                                      // If the profile was updated, reload MainScreen
                                       if (updated != null && mounted) {
                                         setState(() {});
                                       }
@@ -591,7 +591,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             onTap: () async {
               Navigator.pop(context);
               await AuthService().signOut();
-              // AuthWrapper avtomatik login ga yo'naltiradi
+              // AuthWrapper automatically redirects to login
             },
           ),
           const SizedBox(height: 16),

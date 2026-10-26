@@ -11,13 +11,13 @@ class FollowService {
   final _db = FirebaseFirestore.instance;
   String get _myUid => FirebaseAuth.instance.currentUser!.uid;
 
-  // Kuzatish
+  // Follow
   Future<void> follow(String targetUid) async {
     final batch = _db.batch();
-    // Bildirishnoma yuborish (await kerak emas)
+    // Send a notification (no need to await)
     unawaited(NotificationService().sendFollowNotification(targetUid));
 
-    // Men kuzatmoqdaman: myFollowing += targetUid
+    // I am following: myFollowing += targetUid
     batch.set(
       _db
           .collection('users')
@@ -27,7 +27,7 @@ class FollowService {
       {'uid': targetUid, 'createdAt': FieldValue.serverTimestamp()},
     );
 
-    // Target menga ega: targetFollowers += myUid
+    // Target gains a follower: targetFollowers += myUid
     batch.set(
       _db
           .collection('users')
@@ -37,7 +37,7 @@ class FollowService {
       {'uid': _myUid, 'createdAt': FieldValue.serverTimestamp()},
     );
 
-    // Sanalarni yangilash
+    // Update the counters
     batch.update(_db.collection('users').doc(_myUid), {
       'followingCount': FieldValue.increment(1),
     });
@@ -48,7 +48,7 @@ class FollowService {
     await batch.commit();
   }
 
-  // Kuzatishni to'xtatish
+  // Unfollow
   Future<void> unfollow(String targetUid) async {
     final batch = _db.batch();
 
@@ -77,7 +77,7 @@ class FollowService {
     await batch.commit();
   }
 
-  // Kuzatyapmanmi?
+  // Am I following?
   Future<bool> isFollowing(String targetUid) async {
     final doc = await _db
         .collection('users')
@@ -99,7 +99,7 @@ class FollowService {
         .map((doc) => doc.exists);
   }
 
-  // Kuzatuvchilar ro'yxati
+  // Followers list
   Stream<List<String>> followersStream(String uid) {
     return _db
         .collection('users')
@@ -109,7 +109,7 @@ class FollowService {
         .map((q) => q.docs.map((d) => d.id).toList());
   }
 
-  // Kuzatilayotganlar ro'yxati
+  // Following list
   Stream<List<String>> followingStream(String uid) {
     return _db
         .collection('users')

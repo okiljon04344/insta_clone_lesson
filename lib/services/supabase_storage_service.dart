@@ -54,7 +54,7 @@ class SupabaseStorageService {
   }) async {
     if (!SupabaseConfig.isConfigured) {
       throw StateError(
-        'Supabase ulanmagan. SUPABASE_URL va SUPABASE_ANON_KEY ni dart-define orqali bering.',
+        'Supabase is not configured. Provide SUPABASE_URL and SUPABASE_ANON_KEY via --dart-define.',
       );
     }
 

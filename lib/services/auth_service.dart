@@ -29,7 +29,7 @@ class AuthService {
   User? get currentFirebaseUser => _auth.currentUser;
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
-  // ─── Email/Parol bilan kirish ─────────────────────────────────────────────
+  // ─── Sign in with email/password ─────────────────────────────────────────────
   Future<UserModel> signInWithEmail({
     required String emailOrUsername,
     required String password,
@@ -37,7 +37,7 @@ class AuthService {
     try {
       String email = emailOrUsername;
 
-      // Username bilan kirishni qo'llab-quvvatlash
+      // Support signing in with a username
       if (!emailOrUsername.contains('@')) {
         final query = await _db
             .collection('users')
@@ -62,7 +62,7 @@ class AuthService {
     }
   }
 
-  // ─── Email bilan ro'yxatdan o'tish ────────────────────────────────────────
+  // ─── Register with email ────────────────────────────────────────
   Future<UserModel> registerWithEmail({
     required String email,
     required String password,
@@ -72,7 +72,7 @@ class AuthService {
     XFile? profileImage,
   }) async {
     try {
-      // Username band emasligini tekshirish
+      // Check that the username is not taken
       final usernameQuery = await _db
           .collection('users')
           .where('username', isEqualTo: username.toLowerCase().trim())
@@ -83,25 +83,25 @@ class AuthService {
         throw AuthException('Bu foydalanuvchi nomi allaqachon band');
       }
 
-      // Firebase Auth da hisob yaratish
+      // Create the account in Firebase Auth
       final cred = await _auth.createUserWithEmailAndPassword(
         email: email.trim(),
         password: password,
       );
 
-      // Profil rasmini yuklash
+      // Upload the profile image
       String photoUrl = '';
       if (profileImage != null) {
         photoUrl = await _uploadProfileImage(cred.user!.uid, profileImage);
       }
 
-      // Firebase Auth profilni yangilash
+      // Update the Firebase Auth profile
       await cred.user!.updateDisplayName(displayName);
       if (photoUrl.isNotEmpty) {
         await cred.user!.updatePhotoURL(photoUrl);
       }
 
-      // Firestore da foydalanuvchi yaratish
+      // Create the user document in Firestore
       final user = UserModel(
         uid: cred.user!.uid,
         email: email.trim(),
@@ -114,7 +114,7 @@ class AuthService {
 
       await _db.collection('users').doc(user.uid).set(user.toMap());
 
-      // Emailni tasdiqlash xati yuborish
+      // Send the email verification message
       await cred.user!.sendEmailVerification();
 
       return user;
@@ -125,7 +125,7 @@ class AuthService {
     }
   }
 
-  // ─── Telefon raqam bilan kirish ───────────────────────────────────────────
+  // ─── Sign in with phone number ───────────────────────────────────────────
   Future<void> sendOtp({
     required String phoneNumber,
     required Function(String verificationId) onCodeSent,
@@ -165,13 +165,13 @@ class AuthService {
       final cred = await _auth.signInWithCredential(credential);
       final uid = cred.user!.uid;
 
-      // Mavjud foydalanuvchimi tekshirish
+      // Check whether the user already exists
       final doc = await _db.collection('users').doc(uid).get();
       if (doc.exists) {
         return UserModel.fromMap(doc.data()!);
       }
 
-      // Yangi foydalanuvchi — profil yaratish
+      // New user: create the profile
       String photoUrl = '';
       if (profileImage != null) {
         photoUrl = await _uploadProfileImage(uid, profileImage);
@@ -197,7 +197,7 @@ class AuthService {
     }
   }
 
-  // ─── Google bilan kirish ──────────────────────────────────────────────────
+  // ─── Sign in with Google ──────────────────────────────────────────────────
   Future<UserModel> ensurePhoneUserProfile(
     UserCredential cred, {
     String? displayName,
@@ -262,13 +262,13 @@ class AuthService {
       }
       final uid = firebaseUser.uid;
 
-      // Mavjud foydalanuvchimi?
+      // Existing user?
       final doc = await _db.collection('users').doc(uid).get();
       if (doc.exists) {
         return UserModel.fromMap(doc.data()!);
       }
 
-      // Yangi foydalanuvchi — Firestore da profil yaratish
+      // New user: create the profile in Firestore
       final googleEmail = firebaseUser.email ?? '';
       final baseUsername = googleEmail
           .split('@')
@@ -276,7 +276,7 @@ class AuthService {
           .replaceAll(RegExp(r'[^a-zA-Z0-9._]'), '_')
           .toLowerCase();
 
-      // Username noyobligini ta'minlash
+      // Ensure the username is unique
       String finalUsername = baseUsername;
       int suffix = 1;
       while (true) {
@@ -311,7 +311,7 @@ class AuthService {
     }
   }
 
-  // ─── Parolni tiklash ──────────────────────────────────────────────────────
+  // ─── Password reset ──────────────────────────────────────────────────────
   Future<void> resetPassword(String email) async {
     try {
       await _auth.sendPasswordResetEmail(email: email.trim());
@@ -320,13 +320,13 @@ class AuthService {
     }
   }
 
-  // ─── Chiqish ──────────────────────────────────────────────────────────────
+  // ─── Sign out ──────────────────────────────────────────────────────────────
   Future<void> signOut() async {
     await _googleSignIn.signOut();
     await _auth.signOut();
   }
 
-  // ─── Joriy foydalanuvchini olish ──────────────────────────────────────────
+  // ─── Get the current user ──────────────────────────────────────────
   Future<UserModel?> getCurrentUser() async {
     final user = _auth.currentUser;
     if (user == null) return null;

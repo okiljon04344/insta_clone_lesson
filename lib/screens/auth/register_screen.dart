@@ -18,12 +18,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _pageController = PageController();
   int _currentStep = 0;
 
-  // Step 1 - Hisob ma'lumotlari
+  // Step 1 - Account details
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
-  // Step 2 - Profil ma'lumotlari
+  // Step 2 - Profile details
   final _usernameController = TextEditingController();
   final _displayNameController = TextEditingController();
   final _bioController = TextEditingController();
@@ -132,7 +132,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() => _isGoogleLoading = true);
     try {
       await _authService.signInWithGoogle();
-      // AuthWrapper avtomatik asosiy ekranga yo'naltiradi
+      // AuthWrapper automatically redirects to the main screen
     } on AuthException catch (e) {
       if (!mounted) return;
       _showError(e.message);
@@ -231,7 +231,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  // ─── Step 1: Email va parol ───────────────────────────────────────────────
+  // ─── Step 1: Email and password ───────────────────────────────────────────────
   Widget _buildStep1() {
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
@@ -341,7 +341,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  // ─── Step 2: Profil ma'lumotlari ─────────────────────────────────────────
+  // ─── Step 2: Profile details ─────────────────────────────────────────
   Widget _buildStep2() {
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
@@ -364,7 +364,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               style: const TextStyle(color: AppTheme.grey, fontSize: 14),
             ),
             const SizedBox(height: 28),
-            // Profil rasmi
+            // Profile image
             Center(
               child: GestureDetector(
                 onTap: _pickImage,

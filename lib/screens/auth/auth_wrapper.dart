@@ -12,7 +12,7 @@ class AuthWrapper extends StatelessWidget {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
-        // Yuklanyapti
+        // Loading
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
             backgroundColor: AppTheme.black,
@@ -22,12 +22,12 @@ class AuthWrapper extends StatelessWidget {
           );
         }
 
-        // Kirgan foydalanuvchi
+        // Signed-in user
         if (snapshot.hasData && snapshot.data != null) {
           return const MainScreen();
         }
 
-        // Kirmagan — Login sahifasiga
+        // Signed out: show the login page
         return const LoginScreen();
       },
     );

@@ -68,7 +68,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       final uid = FirebaseAuth.instance.currentUser!.uid;
       final db = FirebaseFirestore.instance;
 
-      // Yangi username band emasligini tekshirish (o'zidan boshqa)
+      // Check that the new username is not taken (by anyone else)
       final newUsername = _usernameController.text.trim().toLowerCase();
       if (newUsername != widget.user.username) {
         final q = await db
@@ -82,7 +82,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         }
       }
 
-      // Rasm yuklash (agar yangi tanlangan bo'lsa)
+      // Upload the image (if a new one was picked)
       String photoUrl = widget.user.photoUrl;
       if (_newProfileImage != null) {
         photoUrl = await SupabaseStorageService().uploadAvatar(
@@ -90,7 +90,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           image: _newProfileImage!,
         );
 
-        // Firebase Auth profilini ham yangilash
+        // Also update the Firebase Auth profile
         await FirebaseAuth.instance.currentUser!.updatePhotoURL(photoUrl);
       }
 
@@ -99,7 +99,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         newDisplayName,
       );
 
-      // Firestore yangilash
+      // Update Firestore
       await db.collection('users').doc(uid).update({
         'displayName': newDisplayName,
         'username': newUsername,
@@ -197,7 +197,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           key: _formKey,
           child: Column(
             children: [
-              // Profil rasmi
+              // Profile image
               GestureDetector(
                 onTap: _pickImage,
                 child: Stack(
@@ -252,7 +252,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               ),
               const SizedBox(height: 32),
 
-              // To'liq ism
+              // Full name
               _buildField(
                 label: 'To\'liq ism',
                 controller: _displayNameController,

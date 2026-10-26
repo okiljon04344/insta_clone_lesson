@@ -38,7 +38,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   void dispose() {
-    // Typing ni o'chirish
+    // Turn typing off
     _chatService.setTyping(widget.otherUser.uid, false);
     _chatService.setOnline(false);
     _controller.dispose();
@@ -207,7 +207,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     ],
                   ],
                 ),
-                // Online yoki lastSeen holati
+                // Online or lastSeen status
                 StreamBuilder<Map<String, dynamic>>(
                   stream: _chatService.onlineStatusStream(widget.otherUser.uid),
                   builder: (ctx, snap) {
@@ -245,12 +245,12 @@ class _ChatScreenState extends State<ChatScreen> {
           ],
         ),
         actions: [
-          // Ovozli qo'ng'iroq
+          // Voice call
           IconButton(
             icon: const Icon(Icons.call_outlined, color: AppTheme.white),
             onPressed: () => _startCall(isVideo: false),
           ),
-          // Video qo'ng'iroq
+          // Video call
           IconButton(
             icon: const Icon(Icons.videocam_outlined, color: AppTheme.white),
             onPressed: () => _startCall(isVideo: true),
@@ -261,7 +261,7 @@ class _ChatScreenState extends State<ChatScreen> {
         children: [
           const Divider(color: AppTheme.divider, height: 1),
 
-          // Xabarlar ro'yxati
+          // Messages list
           Expanded(
             child: StreamBuilder<List<ChatMessage>>(
               stream: _chatService.messagesStream(widget.otherUser.uid),
@@ -383,7 +383,7 @@ class _ChatScreenState extends State<ChatScreen> {
             },
           ),
 
-          // Xabar kiritish
+          // Message input
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: const BoxDecoration(

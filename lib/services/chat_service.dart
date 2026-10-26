@@ -63,7 +63,7 @@ class ChatService {
     return '${sorted[0]}_${sorted[1]}';
   }
 
-  // Xabar yuborish + notification
+  // Send a message + notification
   Future<void> sendMessage(String toUid, String text) async {
     final cid = chatId(_myUid, toUid);
     final now = FieldValue.serverTimestamp();
@@ -92,7 +92,7 @@ class ChatService {
 
     await batch.commit();
 
-    // Bildirishnoma yuborish (await kerak emas)
+    // Send a notification (no need to await)
     NotificationService()
         .sendMessageNotification(toUid: toUid, messageText: text)
         .catchError((_) {});
@@ -135,7 +135,7 @@ class ChatService {
         .catchError((_) {});
   }
 
-  // Xabarlar stream
+  // Messages stream
   Stream<List<ChatMessage>> messagesStream(String toUid) {
     final cid = chatId(_myUid, toUid);
     return _db
@@ -150,11 +150,11 @@ class ChatService {
         );
   }
 
-  // Ko'rilgan deb belgilash + xabarlarga seen=true
+  // Mark as seen + set seen=true on messages
   Future<void> markSeen(String toUid) async {
     final cid = chatId(_myUid, toUid);
 
-    // Chat doc seenBy update
+    // Update seenBy on the chat document
     await _db
         .collection('chats')
         .doc(cid)
@@ -163,7 +163,7 @@ class ChatService {
         })
         .catchError((_) {});
 
-    // So'nggi o'qilmagan xabarlarni seen=true qilish
+    // Set seen=true on the latest unread messages
     final unseen = await _db
         .collection('chats')
         .doc(cid)
@@ -186,7 +186,7 @@ class ChatService {
     }
   }
 
-  // Typing holati
+  // Typing state
   Future<void> setTyping(String toUid, bool isTyping) async {
     final cid = chatId(_myUid, toUid);
     await _db
@@ -198,7 +198,7 @@ class ChatService {
         .catchError((_) {});
   }
 
-  // Typing stream (boshqa foydalanuvchi yozayaptimi)
+  // Typing stream (is the other user typing?)
   Stream<bool> typingStream(String otherUid) {
     final cid = chatId(_myUid, otherUid);
     return _db.collection('chats').doc(cid).snapshots().map((snap) {
@@ -209,7 +209,7 @@ class ChatService {
     });
   }
 
-  // Online holat (users collectionda)
+  // Online status (in the users collection)
   Future<void> setOnline(bool isOnline) async {
     await _db
         .collection('users')
@@ -221,7 +221,7 @@ class ChatService {
         .catchError((_) {});
   }
 
-  // Boshqa foydalanuvchi online holati stream
+  // Online status stream of the other user
   Stream<Map<String, dynamic>> onlineStatusStream(String otherUid) {
     return _db.collection('users').doc(otherUid).snapshots().map((snap) {
       final data = snap.data() ?? {};
@@ -232,7 +232,7 @@ class ChatService {
     });
   }
 
-  // Barcha suhbatlar
+  // All conversations
   Stream<List<Map<String, dynamic>>> conversationsStream() {
     return _db
         .collection('chats')
@@ -244,7 +244,7 @@ class ChatService {
             data['chatId'] = d.id;
             return data;
           }).toList();
-          // In-memory sort — composite index talab qilmaydi
+          // In-memory sort: avoids needing a composite index
           docs.sort((a, b) {
             final aAt =
                 (a['lastMessageAt'] as Timestamp?)?.toDate() ?? DateTime(0);

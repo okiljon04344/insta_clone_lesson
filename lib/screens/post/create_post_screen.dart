@@ -6,9 +6,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/supabase_storage_service.dart';
 import '../../theme/app_theme.dart';
 
-/// Instagram kabi 2 bosqichli post yaratish:
-/// Step 1 → Rasm tanlash / ko'rish (Keyingi)
-/// Step 2 → Caption, joylashuv, sozlamalar (Ulashish)
+/// Two-step post creation, like Instagram:
+/// Step 1: pick / preview the image (Next)
+/// Step 2: caption, location, settings (Share)
 class CreatePostScreen extends StatefulWidget {
   const CreatePostScreen({super.key});
 
@@ -22,7 +22,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   final _captionController = TextEditingController();
   final _locationController = TextEditingController();
   bool _isLoading = false;
-  int _step = 1; // 1 = rasm tanlash, 2 = detallar
+  int _step = 1; // 1 = pick image, 2 = details
   bool _isLoadingGallery = false;
 
   @override
@@ -83,7 +83,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       final user = FirebaseAuth.instance.currentUser!;
       final db = FirebaseFirestore.instance;
 
-      // Foydalanuvchi ma'lumotlarini olish
+      // Load the user data
       final userDoc = await db.collection('users').doc(user.uid).get();
       final userData = userDoc.data()!;
 
@@ -94,7 +94,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         image: _selectedImage!,
       );
 
-      // Firestore ga post yozish
+      // Write the post to Firestore
       await db.collection('posts').doc(postId).set({
         'id': postId,
         'uid': user.uid,
@@ -110,7 +110,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      // Foydalanuvchining postsCount ni oshirish
+      // Increment the user's postsCount
       await db.collection('users').doc(user.uid).update({
         'postsCount': FieldValue.increment(1),
       });
@@ -214,7 +214,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     );
   }
 
-  // STEP 1: Rasm tanlash va ko'rish
+  // STEP 1: pick and preview the image
   Widget _buildStep1() {
     if (_isLoadingGallery) {
       return const Center(
@@ -224,7 +224,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
     return Column(
       children: [
-        // Rasm ko'rinishi
+        // Image preview
         Expanded(
           flex: 6,
           child: _selectedImage != null
@@ -232,7 +232,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                   fit: StackFit.expand,
                   children: [
                     Image.memory(_selectedImageBytes!, fit: BoxFit.contain),
-                    // Nisbat tugmalari (Instagram kabi)
+                    // Aspect ratio buttons (like Instagram)
                     Positioned(left: 8, bottom: 8, child: _aspectRatioButton()),
                     Positioned(
                       right: 8,
@@ -253,7 +253,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 ),
         ),
 
-        // Galereya / Kamera tanlash
+        // Gallery / camera selection
         Container(
           color: AppTheme.black,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -327,12 +327,12 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     );
   }
 
-  // STEP 2: Caption va detallar
+  // STEP 2: caption and details
   Widget _buildStep2() {
     return SingleChildScrollView(
       child: Column(
         children: [
-          // Caption qatori
+          // Caption row
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
@@ -374,7 +374,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
           const Divider(color: AppTheme.divider, height: 1),
 
-          // Joylashuv
+          // Location
           ListTile(
             leading: const Icon(
               Icons.location_on_outlined,
@@ -393,19 +393,19 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
           const Divider(color: AppTheme.divider, height: 1),
 
-          // Odamlarni belgilash
-          _optionTile(Icons.person_outline_rounded, 'Odamlarni belgilash'),
+          // Tag people
+          _optionTile(Icons.person_outline_rounded, 'Tag people'),
           const Divider(color: AppTheme.divider, height: 1),
 
-          // Musiqa
+          // Music
           _optionTile(Icons.music_note_outlined, 'Musiqa qo\'shish'),
           const Divider(color: AppTheme.divider, height: 1),
 
-          // Ko'rish sozlamalari
+          // Audience settings
           _optionTile(Icons.lock_outline, 'Ko\'rish sozlamalari'),
           const Divider(color: AppTheme.divider, height: 1),
 
-          // Ilg'or sozlamalar
+          // Advanced settings
           ListTile(
             leading: const Icon(Icons.settings_outlined, color: AppTheme.white),
             title: const Text(

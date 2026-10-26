@@ -37,7 +37,7 @@ class _LoginScreenState extends State<LoginScreen> {
         emailOrUsername: _emailController.text.trim(),
         password: _passwordController.text,
       );
-      // AuthWrapper avtomatik tarzda asosiy ekranga o'tkazadi
+      // AuthWrapper automatically routes to the main screen
     } on AuthException catch (e) {
       if (!mounted) return;
       _showError(e.message);
@@ -153,17 +153,17 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                // Kirish tugmasi
+                // Sign-in button
                 _buildPrimaryButton(
                   label: context.tr('login'),
                   isLoading: _isLoading,
                   onTap: _login,
                 ),
                 const SizedBox(height: 28),
-                // Ajratuvchi
+                // Divider
                 _buildDivider(context.tr('or')),
                 const SizedBox(height: 24),
-                // Telefon bilan kirish
+                // Sign in with phone
                 _buildOutlineButton(
                   label: context.tr('login_with_phone'),
                   icon: Icons.phone_outlined,
@@ -173,7 +173,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                // Google bilan kirish
+                // Sign in with Google
                 _buildGoogleButton(
                   isLoading: _isGoogleLoading,
                   onTap: _signInWithGoogle,

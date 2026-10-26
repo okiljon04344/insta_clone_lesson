@@ -10,7 +10,7 @@ class CallScreen extends StatefulWidget {
   final bool isVideo;
   final bool isOutgoing;
 
-  /// Kiruvchi qo'ng'iroq uchun callId (isOutgoing=false bo'lganda kerak)
+  /// callId for an incoming call (required when isOutgoing=false)
   final String? callId;
 
   const CallScreen({
@@ -79,7 +79,7 @@ class _CallScreenState extends State<CallScreen>
 
       _listenToCallStatus(id);
 
-      // 30 soniya javob yo'q = missed
+      // No answer within 30 seconds = missed
       _timeoutTimer = Timer(const Duration(seconds: 30), () {
         if (mounted && !_isConnected && _callId != null) {
           _callService.markMissedIfOld(_callId!);
@@ -163,7 +163,7 @@ class _CallScreenState extends State<CallScreen>
       backgroundColor: const Color(0xFF1A1A2E),
       body: Stack(
         children: [
-          // Fon (video qo'ng'iroqda kamera ko'rinishi bo'ladi)
+          // Background (shows the camera view in a video call)
           if (widget.isVideo && !_isCameraOff)
             Container(
               decoration: const BoxDecoration(
@@ -192,7 +192,7 @@ class _CallScreenState extends State<CallScreen>
           SafeArea(
             child: Column(
               children: [
-                // Yuqori qism
+                // Top section
                 Padding(
                   padding: const EdgeInsets.all(20),
                   child: Row(
@@ -221,7 +221,7 @@ class _CallScreenState extends State<CallScreen>
 
                 const Spacer(flex: 2),
 
-                // Foydalanuvchi avatari
+                // User avatar
                 ScaleTransition(
                   scale: !_isConnected
                       ? _pulseAnimation
@@ -265,7 +265,7 @@ class _CallScreenState extends State<CallScreen>
 
                 const SizedBox(height: 20),
 
-                // Foydalanuvchi ismi
+                // User name
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -310,7 +310,7 @@ class _CallScreenState extends State<CallScreen>
             ),
           ),
 
-          // O'z kamera ko'rinishi (video bo'lsa)
+          // Own camera preview (for video calls)
           if (widget.isVideo && !_isCameraOff)
             Positioned(
               top: 100,
@@ -374,7 +374,7 @@ class _CallScreenState extends State<CallScreen>
             ),
             const SizedBox(width: 20),
 
-            // Tugatish tugmasi
+            // End call button
             GestureDetector(
               onTap: _endCall,
               child: Container(
@@ -411,7 +411,7 @@ class _CallScreenState extends State<CallScreen>
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // Rad etish
+        // Decline
         Column(
           children: [
             GestureDetector(
@@ -438,7 +438,7 @@ class _CallScreenState extends State<CallScreen>
           ],
         ),
         const SizedBox(width: 72),
-        // Qabul qilish
+        // Accept
         Column(
           children: [
             GestureDetector(

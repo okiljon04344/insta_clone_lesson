@@ -20,7 +20,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   @override
   void initState() {
     super.initState();
-    // Ekran ochilib ko'rildi — hammasi o'qildi
+    // Screen opened: mark everything as read
     NotificationService().markAllRead();
   }
 
@@ -80,7 +80,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             );
           }
 
-          // Guruhlashtirish: Bugun / Bu hafta / Kechagi
+          // Grouping: Today / This week / Earlier
           return ListView.builder(
             itemCount: notifications.length,
             itemBuilder: (context, i) {
